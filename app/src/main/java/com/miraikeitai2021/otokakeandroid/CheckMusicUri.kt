@@ -9,7 +9,7 @@ class CheckMusicUri {
 
     /**
      * ストレージからUriを得るメソッド
-     * context：Activityのcontext
+     * context：Activityのcontext, misicId：再生したい音楽のID
      */
     fun checkUri(context: Context, musicId: Int): Uri {
 
