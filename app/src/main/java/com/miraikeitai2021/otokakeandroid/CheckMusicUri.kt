@@ -12,6 +12,7 @@ class CheckMusicUri {
      * context：Activityのcontext
      */
     fun checkUri(context: Context, musicId: Int): Uri {
+
         //projection: 欲しい情報を定義
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -47,8 +48,6 @@ class CheckMusicUri {
                     "id: $id, displayName: $displayName, contentUir: $contentUri", Toast.LENGTH_LONG).show()
             }
         }
-
         return contentUri
     }
-
 }
