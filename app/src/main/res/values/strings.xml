@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">OtokakeAndroid</string>
     <string name="ble_not_supported">この端末でBLE通信はサポートされていません。</string>
+    <string name="bluetooth_enabled">Bluetoothが有効化されました。</string>
+    <string name="bluetooth_not_enabled_warning">Bluetoothが無効の場合アプリを使用することができません。</string>
 </resources>
