@@ -13,8 +13,11 @@ class MainActivity : AppCompatActivity() {
     companion object {  //Mainスレッドでdatabase操作するとエラーになる
         lateinit var db1: PlaylistDatabase
         lateinit var db2: MusicDatabase
+        lateinit var db3: MiddlelistDatabase
     }
+
      */
+
 
 
 
@@ -37,9 +40,30 @@ class MainActivity : AppCompatActivity() {
         val db2Dao = db2.MusicDao()
         var newlist2 = Music(0,123456789,"あさ","","www")
         db2Dao.insert(newlist2)
+        newlist2 = Music(0,123456,"ひる","","www")
+        db2Dao.insert(newlist2)
+        newlist2 = Music(0,123,"よる","","www")
+        db2Dao.insert(newlist2)
         Log.v("TAG","test insert ${db2Dao.getAll().toString()}")
 
+        //色々試運転した残り
+        db3 = MiddlelistDatabase.getInstance(this)
+        val db3Dao = db3.MiddlelistDao()
+        var newlist3 = Middlelist(0,1,1)
+        db3Dao.insert(newlist3)
+        newlist3 = Middlelist(0,1,2)
+        db3Dao.insert(newlist3)
+        newlist3 = Middlelist(0,2,1)
+        db3Dao.insert(newlist3)
+        db3Dao.insertMusic(1,3)
+        Log.v("TAG","test insert ${db3Dao.getAll().toString()}")
+        Log.v("TAG","test insert ${db3Dao.getPlaylist(1).toString()}")
+        db3Dao.deletePlaylist(1)
+        Log.v("TAG","test insert ${db3Dao.getAll().toString()}")
+
          */
+
+
 
         //コメントアウト部分は動作確認で使ったもの.元に戻せば動くはず
 

@@ -22,7 +22,7 @@ abstract class PlaylistDatabase : RoomDatabase(){
             synchronized(lock) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.applicationContext,
-                        PlaylistDatabase::class.java, "PlaylistDatabase")   //たぶんストレージに保存されるDB名
+                        PlaylistDatabase::class.java, "PlaylistDatabase")   //たぶんストレージに保存されるDB名Pla
                         .allowMainThreadQueries()
                         .build()
                 }
@@ -57,23 +57,22 @@ abstract class MusicDatabase : RoomDatabase(){
     }
 }
 
-/*
 //MiddleListデータベースの実装
-@Database(entities = [MiddleList::class],version = 1,exportSchema = false)
-abstract class MiddleListDatabase : RoomDatabase(){
-    abstract fun MiddleListDao(): MiddleListDao
+@Database(entities = arrayOf(Middlelist::class),version = 1,exportSchema = false)
+abstract class MiddlelistDatabase : RoomDatabase(){
+    abstract fun MiddlelistDao(): MiddlelistDao
 
     companion object {
 
-        private var INSTANCE: MiddleListDatabase? = null
+        private var INSTANCE: MiddlelistDatabase? = null
 
         private val lock = Any()
 
-        fun getInstance(context: Context): MiddleListDatabase {
+        fun getInstance(context: Context): MiddlelistDatabase {
             synchronized(lock) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.applicationContext,
-                        MiddleListDatabase::class.java, "MiddleListDatabase")
+                        MiddlelistDatabase::class.java, "MiddlelistDatabase")
                         .allowMainThreadQueries()
                         .build()
                 }
@@ -83,4 +82,3 @@ abstract class MiddleListDatabase : RoomDatabase(){
     }
 }
 
- */

@@ -42,30 +42,33 @@ interface MusicDao{
     fun delete(user : Music)
 }
 
-/*
+
 //中間テーブルのDao
 @Dao
-interface MiddleListDao{
-    @Transaction
-    @Query(
-        """
-            SELECT * FROM Music INNER JOIN middlelist
-            ON Music.backend_id=middleList.middle_backend_id
-            WHERE middleList.middle_backend_id=:playlistnum
-        """
-    )
-    suspend fun getMusic(vararg playlistnum: Int): List<Music>
+interface MiddlelistDao{
+    //全要素取得
+    @Query("SELECT * FROM Middlelist")
+    fun getAll(): List<Middlelist>
 
-    // SQL文について
-    // 全てのMusicテーブルから，middleListテーブルも参考にしながら(1行目)，
-    // middleListに登録されていて(2行目)，
-    // そのmiddleListのmiddle_backend_idが，引数で渡されたplaylistnumの番号と同じMusicをとってきて(3行目)
-    // となるらしい　参考:https://qiita.com/FeliTech/items/1a979654c547f3ca6c9a
+    //追加
+    @Insert
+    fun insert(user : Middlelist)
 
-    //返り値がMusicの配列になるので，これをList表示すればよさそう？
+    //更新
+    @Update
+    fun update(user : Middlelist)
+
+    //削除
+    @Delete
+    fun delete(user : Middlelist)
+
+    //getPlaylist(1) でプレイリスト1の曲をリストで返す
+    @Query("SELECT * FROM Middlelist WHERE middle_playlist_id = :playlistnum")
+    fun getPlaylist(playlistnum: Int): List<Middlelist>
+
+    //deletePlaylist(1) でプレイリスト1の情報を全て削除
+    @Query("DELETE FROM Middlelist WHERE middle_playlist_id = :playlistnum")
+    fun deletePlaylist(playlistnum: Int)
 
 
-    //InsertやDeleteは未実装
 }
-
- */
