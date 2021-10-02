@@ -315,7 +315,8 @@ class GattCallback(private val context: Activity, private val sensorValueHandler
             BluetoothProfile.STATE_CONNECTED -> {
                 connectionState = STATE_CONNECTED
                 Log.d("debug", "Connected to GATT server.")
-                Log.d("debug", "Attempting to start service discovery: ${gatt?.discoverServices()}")
+                val isDiscoveringServices = gatt?.discoverServices()
+                Log.d("debug", "Attempting to start service discovery: $isDiscoveringServices")
             }
             BluetoothProfile.STATE_DISCONNECTED -> {
                 connectionState = STATE_DISCONNECTED
