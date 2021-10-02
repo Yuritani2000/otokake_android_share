@@ -27,17 +27,12 @@
             android:layout_weight="1"/>
 
         <Button
-            android:id="@+id/retry_search_device_button"
+            android:id="@+id/disconnect_device_button"
             android:text="@string/disconnect_device"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
 
     </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/ble_device_list"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
 
 </LinearLayout>

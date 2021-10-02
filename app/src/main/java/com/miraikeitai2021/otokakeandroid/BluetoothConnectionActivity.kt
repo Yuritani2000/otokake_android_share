@@ -1,6 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
+import android.app.Activity
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
@@ -31,10 +32,15 @@ private const val CONNECTION_INTERVAL = 500L
 // GATT定義ディスクリプタの一つ．である，CCCD(Client Characteristic Configuration Descriptor). 端末にNotiyやIndicateを制御するにはこれが使われる．
 private const val CCCD_UUID_STR = "00002902-0000-1000-8000-00805f9b34fb"
 
+/* GattCallbackにおいて，接続を制御する際に使用する定数． */
+const val STATE_DISCONNECTED = 0
+const val STATE_CONNECTING = 1
+const val STATE_CONNECTED = 2
+const val CONNECTION_PERIOD = 5000L
+
 class BluetoothConnectionActivity : AppCompatActivity() {
 
-    /* デバイスがスキャン中かどうかを管理するBoolean変数 */
-    private var bleDeviceScanning: Boolean = false
+    private var bleConnectionRunnable: BleConnectionRunnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,13 +71,24 @@ class BluetoothConnectionActivity : AppCompatActivity() {
 
 
         val searchDeviceButton = findViewById<Button>(R.id.search_device_button)
+
         searchDeviceButton.setOnClickListener {
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    scanDevice(it.isEnabled, it)
+                    bleConnectionRunnable = startBleConnection(it)
                 }
             }
         }
+
+        val disconnectDeviceButton = findViewById<Button>(R.id.disconnect_device_button)
+        disconnectDeviceButton.setOnClickListener {
+            bleConnectionRunnable?.disconnect()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        bleConnectionRunnable?.disconnect()
     }
 
     // Bluetoothが有効であることを確認する。
@@ -113,15 +130,25 @@ class BluetoothConnectionActivity : AppCompatActivity() {
     }
 
     /* デバイスのスキャンを行う */
-    private fun scanDevice(
-        enable: Boolean,
+    private fun startBleConnection(
         bluetoothAdapter: BluetoothAdapter
-    ){
-        val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-        val leScanCallback = LeScanCallback(bluetoothLeScanner)
-        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES).build()
-        val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName("MyESP32").build())
-        when(enable){
+    ): BleConnectionRunnable {
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter)
+        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
+        bluetoothConnectionThread.start()
+        return bleConnectionRunnable
+    }
+}
+
+class BleConnectionRunnable(private val context: Activity, private val bluetoothAdapter: BluetoothAdapter): Runnable{
+    /* デバイスがスキャン中かどうかを管理するBoolean変数 */
+    private var bleDeviceScanning: Boolean = false
+    private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+    private val leScanCallback = LeScanCallback(context, bluetoothLeScanner)
+    private val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES).build()
+    private val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName("MyESP32").build())
+    override fun run(){
+        when(bluetoothAdapter.isEnabled){
             true ->{
                 // 事前に決めたスキャン時間を過ぎたらスキャンを停止する
                 Handler(Looper.getMainLooper()).postDelayed({
@@ -138,160 +165,159 @@ class BluetoothConnectionActivity : AppCompatActivity() {
         }
     }
 
-    inner class LeScanCallback(private val bluetoothLeScanner: BluetoothLeScanner) : ScanCallback(){
-
-        var hasAlreadyFound = false
-
-        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            super.onBatchScanResults(results)
-            results?.forEach {
-                Log.d("debug", "device ${it.device}")
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            super.onScanFailed(errorCode)
-            Log.e("BLEDeviceScanFailed", "端末のスキャンに失敗しました")
-        }
-
-        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            super.onScanResult(callbackType, result)
-            result?.let {
-                Log.d("debug", "device ${it.device.name} found")
-                bluetoothLeScanner.stopScan(this)
-                // 第3引数のBlueotoothGattCallbackが，bluetoothGattを取得しなければ撮ることができない…
-                if(!hasAlreadyFound) {
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        val bluetoothGatt = it.device.connectGatt(
-                            this@BluetoothConnectionActivity,
-                            true,
-                            GattCallback()
-                        )
-                    }, CONNECTION_INTERVAL)
-                    hasAlreadyFound = true
-                }
-            }
-        }
+    fun disconnect(){
+        leScanCallback.disconnectGatt()
     }
-
-    private var connectionState = STATE_DISCONNECTED
-
-    // デバイスの接続と切断を管理するコールバック関数
-    inner class GattCallback : BluetoothGattCallback() {
-        private var connectionTimedOut = false
-        override fun onConnectionStateChange(
-            gatt: BluetoothGatt?,
-            status: Int,
-            newState: Int
-        ) {
-            val intentAction: String
-            Handler(Looper.getMainLooper()).postDelayed({
-                connectionTimedOut = true
-            }, CONNECTION_PERIOD)
-
-            when(status){
-                133 -> {
-                    if (!connectionTimedOut){
-                        Log.d("debug", "connection failed, retrying...")
-                        gatt?.close()
-                        gatt?.device?.connectGatt(this@BluetoothConnectionActivity, true, this)
-                    }else{
-                        gatt?.close()
-                        connectionTimedOut = false
-                        Log.d("debug", "connection failed, connection timed out")
-                    }
-                }
-            }
-            when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> {
-                    intentAction = ACTION_GATT_CONNECTED
-                    connectionState = STATE_CONNECTED
-                    Log.d("debug", "Connected to GATT server.")
-                    Log.d("debug", "Attempting to start service discovery: ${gatt?.discoverServices()}")
-                }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    intentAction = ACTION_GATT_DISCONNECTED
-                    connectionState = STATE_DISCONNECTED
-                    Log.d("debug", "Disconnected from GATT server.")
-                    gatt?.close()
-                }
-            }
-        }
-
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int){
-            when(status){
-                BluetoothGatt.GATT_SUCCESS -> {
-                    val gattServices = gatt.services
-                    gattServices[2]?.characteristics?.forEach { gattCharacteristic ->
-                        gatt.readCharacteristic(gattCharacteristic)
-
-                    }
-
-
-//                    gattServices?.forEach { gattService ->
-//                        val gattCharacteristics = gattService.characteristics
-//                        gattCharacteristics?.forEach{ gattCharacteristic ->
-//                            gatt.readCharacteristic(gattCharacteristic)
-//                        }
-//                    }
-                }
-                else -> {
-                    Log.d("debug", "onServicesDisconnected received: $status")
-                }
-            }
-        }
-
-        // キャラクタリスティックを受信するとココが呼ばれる？ならばまずはここでデータが撮れているかどうかを見なければ…！
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
-        ){
-            when(status){
-                BluetoothGatt.GATT_SUCCESS -> {
-                    Log.d("debug", "characteristic read succeeded")
-                    if(characteristic.value.size == 2){
-                        characteristic.value.forEach {
-                            Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
-                            val setNotificationStatus = gatt.setCharacteristicNotification(characteristic, true)
-                            characteristic.descriptors.forEach { it ->
-                                Log.d("debug", "descriptor: ${it.uuid}");
-                            }
-                            val uuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-                            val descriptor = characteristic.getDescriptor(uuid)
-                            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                            gatt.writeDescriptor(descriptor)
-                            Log.d("debug", "setCharacteristicNotificationStatus: $setNotificationStatus")
-                        }
-                        val pressure = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
-                        Log.d("debug", "received pressure: $pressure")
-                    }else{
-                        Log.e("debug", "characteristic value format is invalid.")
-                    }
-
-                }
-            }
-        }
-
-        override fun onCharacteristicChanged(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?
-        ) {
-            Log.d("debug", "onCharacteristicChanged called")
-            if(characteristic?.value?.size == 2){
-                characteristic?.value?.forEach {
-                    Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
-                }
-                characteristic?.let{ it ->
-                    val pressure = (it.value[0].toInt() and 0xFF) * 256 + (it.value[1].toInt() and 0xFF)
-                    Log.d("debug", "received pressure: $pressure")
-                }
-
-            }else{
-                Log.e("debug", "characteristic value format is invalid.")
-            }
-        }
-    }
-
 }
 
+class LeScanCallback(private val context: Activity, private val bluetoothLeScanner: BluetoothLeScanner) : ScanCallback(){
+
+    private var hasAlreadyFound = false
+    private var bluetoothGatt: BluetoothGatt? = null
+
+    override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+        super.onBatchScanResults(results)
+        results?.forEach {
+            Log.d("debug", "device ${it.device}")
+        }
+    }
+
+    override fun onScanFailed(errorCode: Int) {
+        super.onScanFailed(errorCode)
+        Log.e("BLEDeviceScanFailed", "端末のスキャンに失敗しました")
+    }
+
+    override fun onScanResult(callbackType: Int, result: ScanResult?) {
+        super.onScanResult(callbackType, result)
+        result?.let {
+            Log.d("debug", "device ${it.device.name} found")
+            bluetoothLeScanner.stopScan(this)
+            // 第3引数のBlueotoothGattCallbackが，bluetoothGattを取得しなければ撮ることができない…
+            if(!hasAlreadyFound) {
+                Handler(Looper.getMainLooper()).postDelayed({
+                    bluetoothGatt = it.device.connectGatt(
+                        context,
+                        true,
+                        GattCallback(context)
+                    )
+                }, CONNECTION_INTERVAL)
+                hasAlreadyFound = true
+            }
+        }
+    }
+
+    fun disconnectGatt(){
+        if(bluetoothGatt == null){
+            Log.e("debug", "bluetoothGatt to disconnect is null")
+        }
+        Log.d("debug", "disconnect from BLE device")
+        bluetoothGatt?.close()
+    }
+}
+
+
+// デバイスの接続と切断を管理するコールバック関数
+class GattCallback(private val context: Activity) : BluetoothGattCallback() {
+    private var connectionState = STATE_DISCONNECTED
+    private var connectionTimedOut = false
+    override fun onConnectionStateChange(
+        gatt: BluetoothGatt?,
+        status: Int,
+        newState: Int
+    ) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            connectionTimedOut = true
+        }, CONNECTION_PERIOD)
+
+        when(status){
+            133 -> {
+                if (!connectionTimedOut){
+                    Log.d("debug", "connection failed, retrying...")
+                    gatt?.close()
+                    gatt?.device?.connectGatt(context, true, this)
+                }else{
+                    gatt?.close()
+                    connectionTimedOut = false
+                    Log.d("debug", "connection failed, connection timed out")
+                }
+            }
+        }
+        when (newState) {
+            BluetoothProfile.STATE_CONNECTED -> {
+                connectionState = STATE_CONNECTED
+                Log.d("debug", "Connected to GATT server.")
+                Log.d("debug", "Attempting to start service discovery: ${gatt?.discoverServices()}")
+            }
+            BluetoothProfile.STATE_DISCONNECTED -> {
+                connectionState = STATE_DISCONNECTED
+                Log.d("debug", "Disconnected from GATT server.")
+                gatt?.close()
+            }
+        }
+    }
+
+    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int){
+        when(status){
+            BluetoothGatt.GATT_SUCCESS -> {
+                val gattServices = gatt.services
+                gattServices[2]?.characteristics?.forEach { gattCharacteristic ->
+                    gatt.readCharacteristic(gattCharacteristic)
+                }
+            }
+            else -> {
+                Log.d("debug", "onServicesDisconnected received: $status")
+            }
+        }
+    }
+
+    // キャラクタリスティックを受信するとココが呼ばれる？ならばまずはここでデータが撮れているかどうかを見なければ…！
+    override fun onCharacteristicRead(
+        gatt: BluetoothGatt,
+        characteristic: BluetoothGattCharacteristic,
+        status: Int
+    ){
+        when(status){
+            BluetoothGatt.GATT_SUCCESS -> {
+                Log.d("debug", "characteristic read succeeded")
+                if(characteristic.value.size == 2){
+                    characteristic.value.forEach {
+                        Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
+                        val setNotificationStatus = gatt.setCharacteristicNotification(characteristic, true)
+                        characteristic.descriptors.forEach { it ->
+                            Log.d("debug", "descriptor: ${it.uuid}");
+                        }
+                        val uuid = UUID.fromString(CCCD_UUID_STR)
+                        val descriptor = characteristic.getDescriptor(uuid)
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
+                        Log.d("debug", "setCharacteristicNotificationStatus: $setNotificationStatus")
+                    }
+                    val pressure = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
+                    Log.d("debug", "received pressure: $pressure")
+                }else{
+                    Log.e("debug", "characteristic value format is invalid.")
+                }
+
+            }
+        }
+    }
+
+    override fun onCharacteristicChanged(
+        gatt: BluetoothGatt?,
+        characteristic: BluetoothGattCharacteristic?
+    ) {
+        Log.d("debug", "onCharacteristicChanged called")
+        if(characteristic?.value?.size == 2){
+            characteristic?.value?.forEach {
+                Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
+            }
+            characteristic?.let{ it ->
+                val pressure = (it.value[0].toInt() and 0xFF) * 256 + (it.value[1].toInt() and 0xFF)
+                Log.d("debug", "received pressure: $pressure")
+            }
+
+        }else{
+            Log.e("debug", "characteristic value format is invalid.")
+        }
+    }
+}
