@@ -7,13 +7,16 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.os.Trace.isEnabled
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import java.util.*
@@ -38,9 +41,37 @@ const val STATE_CONNECTING = 1
 const val STATE_CONNECTED = 2
 const val CONNECTION_PERIOD = 5000L
 
+/* BLEデバイスの値を処理するスレッドから，UIスレッドに値を渡すときのHandlerで使用する定数 */
+private const val SENSOR_VALUE_RECEIVE = 100
+
+/* BLEデバイスの値をUIスレッドで更新する際，どの値を更新するのかを指定する為のID*/
+private const val SENSOR_LEFT_1 = 10000
+private const val SENSOR_LEFT_2 = 10001
+private const val SENSOR_RIGHT_1 = 10002
+private const val SENSOR_RIGHT_2 = 10003
+
+/* 左右それぞれの足裏デバイスの名前， */
+private const val DEVICE_NAME_LEFT = "Otokake_Left"
+private const val DEVICE_NAME_RIGHT = "Otokake_Right"
+
+
 class BluetoothConnectionActivity : AppCompatActivity() {
 
-    private var bleConnectionRunnable: BleConnectionRunnable? = null
+    companion object{
+        private class SensorValueHandler(val bluetoothConnectionActivity: BluetoothConnectionActivity): Handler(Looper.getMainLooper()){
+            override fun handleMessage(msg: Message) {
+                when(msg.what){
+                    SENSOR_VALUE_RECEIVE -> {
+                        Log.d("debug", "handler called")
+                        bluetoothConnectionActivity.updateSensorValueTextView(msg.arg1, msg.arg2)
+                    }
+                }
+            }
+        }
+    }
+
+    private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
+    private var bleConnectionRunnableRight: BleConnectionRunnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,25 +101,40 @@ class BluetoothConnectionActivity : AppCompatActivity() {
         }
 
 
-        val searchDeviceButton = findViewById<Button>(R.id.search_device_button)
-
-        searchDeviceButton.setOnClickListener {
+        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
+        searchLeftDeviceButton.setOnClickListener {
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnable = startBleConnection(it)
+                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
                 }
             }
         }
 
-        val disconnectDeviceButton = findViewById<Button>(R.id.disconnect_device_button)
-        disconnectDeviceButton.setOnClickListener {
-            bleConnectionRunnable?.disconnect()
+        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
+        searchRightDeviceButton.setOnClickListener {
+            bluetoothAdapter?.let{
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
+                }
+            }
         }
+
+        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
+        disconnectLeftDeviceButton.setOnClickListener {
+            bleConnectionRunnableLeft?.disconnect()
+        }
+
+        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
+        disconnectRightDeviceButton.setOnClickListener {
+            bleConnectionRunnableLeft?.disconnect()
+        }
+
     }
 
     override fun onPause() {
         super.onPause()
-        bleConnectionRunnable?.disconnect()
+        bleConnectionRunnableLeft?.disconnect()
+        bleConnectionRunnableRight?.disconnect()
     }
 
     // Bluetoothが有効であることを確認する。
@@ -131,22 +177,45 @@ class BluetoothConnectionActivity : AppCompatActivity() {
 
     /* デバイスのスキャンを行う */
     private fun startBleConnection(
-        bluetoothAdapter: BluetoothAdapter
+        bluetoothAdapter: BluetoothAdapter,
+        deviceName: String
     ): BleConnectionRunnable {
-        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter)
+        val sensorValueHandler = SensorValueHandler(this)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
     }
+
+    private fun updateSensorValueTextView(positionId: Int, sensorValue: Int){
+        when(positionId){
+            SENSOR_LEFT_1 ->{
+                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
+                sensorValueLeft1TextView.text = sensorValue.toString()
+            }
+            SENSOR_LEFT_2 ->{
+                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
+                sensorValueLeft2TextView.text = sensorValue.toString()
+            }
+            SENSOR_RIGHT_1 ->{
+                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
+                sensorValueRight1TextView.text = sensorValue.toString()
+            }
+            SENSOR_RIGHT_2 ->{
+                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
+                sensorValueRight2TextView.text = sensorValue.toString()
+            }
+        }
+    }
 }
 
-class BleConnectionRunnable(private val context: Activity, private val bluetoothAdapter: BluetoothAdapter): Runnable{
+class BleConnectionRunnable(private val context: Activity, private val bluetoothAdapter: BluetoothAdapter, private val sensorValueHandler: Handler, deviceName: String): Runnable{
     /* デバイスがスキャン中かどうかを管理するBoolean変数 */
     private var bleDeviceScanning: Boolean = false
     private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-    private val leScanCallback = LeScanCallback(context, bluetoothLeScanner)
+    private val leScanCallback = LeScanCallback(context, bluetoothLeScanner, sensorValueHandler)
     private val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES).build()
-    private val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName("MyESP32").build())
+    private val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName(deviceName).build())
     override fun run(){
         when(bluetoothAdapter.isEnabled){
             true ->{
@@ -170,7 +239,7 @@ class BleConnectionRunnable(private val context: Activity, private val bluetooth
     }
 }
 
-class LeScanCallback(private val context: Activity, private val bluetoothLeScanner: BluetoothLeScanner) : ScanCallback(){
+class LeScanCallback(private val context: Activity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: Handler) : ScanCallback(){
 
     private var hasAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
@@ -198,7 +267,7 @@ class LeScanCallback(private val context: Activity, private val bluetoothLeScann
                     bluetoothGatt = it.device.connectGatt(
                         context,
                         true,
-                        GattCallback(context)
+                        GattCallback(context, sensorValueHandler)
                     )
                 }, CONNECTION_INTERVAL)
                 hasAlreadyFound = true
@@ -217,7 +286,7 @@ class LeScanCallback(private val context: Activity, private val bluetoothLeScann
 
 
 // デバイスの接続と切断を管理するコールバック関数
-class GattCallback(private val context: Activity) : BluetoothGattCallback() {
+class GattCallback(private val context: Activity, private val sensorValueHandler: Handler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
     private var connectionTimedOut = false
     override fun onConnectionStateChange(
@@ -279,7 +348,7 @@ class GattCallback(private val context: Activity) : BluetoothGattCallback() {
         when(status){
             BluetoothGatt.GATT_SUCCESS -> {
                 Log.d("debug", "characteristic read succeeded")
-                if(characteristic.value.size == 2){
+                if(characteristic.value.size == 4){
                     characteristic.value.forEach {
                         Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
                         val setNotificationStatus = gatt.setCharacteristicNotification(characteristic, true)
@@ -292,8 +361,10 @@ class GattCallback(private val context: Activity) : BluetoothGattCallback() {
                         gatt.writeDescriptor(descriptor)
                         Log.d("debug", "setCharacteristicNotificationStatus: $setNotificationStatus")
                     }
-                    val pressure = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
-                    Log.d("debug", "received pressure: $pressure")
+                    val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
+                    val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
+                    Log.d("debug", "received pressure sensor 1: $sensorValue1")
+                    Log.d("debug", "received pressure sensor 2: $sensorValue2")
                 }else{
                     Log.e("debug", "characteristic value format is invalid.")
                 }
@@ -307,13 +378,21 @@ class GattCallback(private val context: Activity) : BluetoothGattCallback() {
         characteristic: BluetoothGattCharacteristic?
     ) {
         Log.d("debug", "onCharacteristicChanged called")
-        if(characteristic?.value?.size == 2){
+        if(characteristic?.value?.size == 4){
             characteristic?.value?.forEach {
                 Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
             }
+            val deviceName = gatt?.device?.name
+            if(deviceName != DEVICE_NAME_LEFT && deviceName != DEVICE_NAME_RIGHT) return
             characteristic?.let{ it ->
-                val pressure = (it.value[0].toInt() and 0xFF) * 256 + (it.value[1].toInt() and 0xFF)
-                Log.d("debug", "received pressure: $pressure")
+                val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
+                val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
+                Log.d("debug", "received pressure sensor 1: $sensorValue1")
+                Log.d("debug", "received pressure sensor 2: $sensorValue2")
+                val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
+                sensorValue1Msg.sendToTarget()
+                val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
+                sensorValue2Msg.sendToTarget()
             }
 
         }else{
