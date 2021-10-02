@@ -5,5 +5,5 @@
     <string name="bluetooth_not_enabled_warning">Bluetoothが無効の場合アプリを使用することができません。</string>
     <string name="search_device">デバイスを検索</string>
     <string name="access_fine_location_denied_warning">位置情報へのアクセスを許可しない場合、この機能を使用できません。</string>
-    <string name="retry_search">再検索</string>
+    <string name="disconnect_device">切断</string>
 </resources>
