@@ -1,22 +1,28 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.content.ContentResolver
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.TextView
 import androidx.room.Database
 import androidx.room.Room
 import java.sql.Types.NULL
 
 class MainActivity : AppCompatActivity() {
 
-    /*
+
     companion object {  //Mainスレッドでdatabase操作するとエラーになる
-        lateinit var db1: PlaylistDatabase
+        //lateinit var db1: PlaylistDatabase
         lateinit var db2: MusicDatabase
-        lateinit var db3: MiddlelistDatabase
+        //lateinit var db3: MiddlelistDatabase
     }
 
-     */
+
 
 
 
@@ -35,17 +41,13 @@ class MainActivity : AppCompatActivity() {
         newlist1 = Playlist(0,"アニソン")
         db1Dao.insert(newlist1)
         Log.v("TAG","test insert ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
+        */
 
         db2 = MusicDatabase.getInstance(this)   //MusicのDBでも同じ操作してる
         val db2Dao = db2.MusicDao()
-        var newlist2 = Music(0,123456789,"あさ","","www")
-        db2Dao.insert(newlist2)
-        newlist2 = Music(0,123456,"ひる","","www")
-        db2Dao.insert(newlist2)
-        newlist2 = Music(0,123,"よる","","www")
-        db2Dao.insert(newlist2)
         Log.v("TAG","test insert ${db2Dao.getAll().toString()}")
 
+        /*
         //色々試運転した残り
         db3 = MiddlelistDatabase.getInstance(this)
         val db3Dao = db3.MiddlelistDao()
@@ -63,9 +65,42 @@ class MainActivity : AppCompatActivity() {
 
          */
 
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST
+        )
 
 
-        //コメントアウト部分は動作確認で使ったもの.元に戻せば動くはず
+        val cursor = this.contentResolver.query(
+            MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
+            projection,
+            null, null, null
+        )
+
+        cursor?.use {
+            val id_index = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+            val title_index = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
+            val arttist_index = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+
+            while (cursor.moveToNext()) {
+                var storage_id = cursor.getLong(id_index)
+                var title = cursor.getString(title_index)
+                var artist = cursor.getString(arttist_index)
+
+                Log.v("TAG","test ${storage_id},${title},${artist}")
+
+                db2Dao.insertMusic(storage_id,title,artist)
+
+            }
+            Log.v("TAG","test insert ${db2Dao.getAll().toString()}")
+        }
+
+        val list = db2Dao.getMusic()
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,list)
+        val listView: ListView = findViewById(R.id.listview)
+        listView.adapter = adapter
 
     }
 }

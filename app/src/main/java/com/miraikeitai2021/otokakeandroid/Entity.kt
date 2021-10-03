@@ -16,7 +16,7 @@ data class Playlist(
 //曲目テーブルのEntity
 @Entity
 data class Music(
-    @PrimaryKey(autoGenerate = true) val backend_id: Int, //主キー:バックエンドID(とりあえず自動生成ON)
+    @PrimaryKey(autoGenerate = true) val backend_id: Int=0, //主キー:バックエンドID(とりあえず自動生成ON)
     val storage_id: Long?,  //ストレージID(NULL許容)
     val title: String,     //曲名
     val artist: String?,    //アーティスト名(NULL許容)
@@ -27,7 +27,7 @@ data class Music(
 //中間テーブルのEntity
 @Entity
 data class Middlelist(
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    val middle_playlist_id: Int,
-    val middle_backend_id: Int
+    @PrimaryKey(autoGenerate = true) val id: Int=0,   //主キーに重複しない番号が必要なため，ほんとにただのid
+    val middle_playlist_id: Int,    //プレイリスト番号
+    val middle_backend_id: Int      //そのプレイリストに含まれてる曲のbackend_id
 )

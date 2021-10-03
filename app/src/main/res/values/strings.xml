@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OtokakeAndroid</string>
+    <string name="test" />
 </resources>

@@ -9,6 +9,14 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist")
     fun getAll(): List<Playlist>
 
+    //全要素削除
+    @Query("DELETE FROM Playlist")
+    fun deleteAll()
+
+    //PlayListのid取得
+    @Query("SELECT * FROM Playlist WHERE name = :title")
+    fun getId(title: String): Playlist
+
     //追加
     @Insert
     fun insert(user : Playlist)
@@ -40,6 +48,12 @@ interface MusicDao{
     //削除
     @Delete
     fun delete(user : Music)
+
+    @Query("INSERT INTO Music (storage_id,title,artist) VALUES (:a,:b,:c)")
+    fun insertMusic(a: Long,b: String,c: String)
+
+    @Query("SELECT title FROM Music")
+    fun getMusic(): List<String>
 }
 
 
