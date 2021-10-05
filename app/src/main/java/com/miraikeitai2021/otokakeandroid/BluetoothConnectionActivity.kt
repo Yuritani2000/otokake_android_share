@@ -7,20 +7,17 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.hardware.Sensor
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.os.Trace.isEnabled
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import java.util.*
-import kotlin.experimental.and
 
 // Bluetoothの有効化をリクエストするIntentに関するリクエストコード
 private const val REQUEST_ENABLE_BT = 1000
@@ -244,20 +241,12 @@ class LeScanCallback(private val context: Activity, private val bluetoothLeScann
     private var hasAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
 
-    override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-        super.onBatchScanResults(results)
-        results?.forEach {
-            Log.d("debug", "device ${it.device}")
-        }
-    }
-
     override fun onScanFailed(errorCode: Int) {
         super.onScanFailed(errorCode)
         Log.e("BLEDeviceScanFailed", "端末のスキャンに失敗しました")
     }
 
     override fun onScanResult(callbackType: Int, result: ScanResult?) {
-        super.onScanResult(callbackType, result)
         result?.let {
             Log.d("debug", "device ${it.device.name} found")
             bluetoothLeScanner.stopScan(this)
@@ -284,7 +273,6 @@ class LeScanCallback(private val context: Activity, private val bluetoothLeScann
     }
 }
 
-
 // デバイスの接続と切断を管理するコールバック関数
 class GattCallback(private val context: Activity, private val sensorValueHandler: Handler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
@@ -297,7 +285,6 @@ class GattCallback(private val context: Activity, private val sensorValueHandler
         Handler(Looper.getMainLooper()).postDelayed({
             connectionTimedOut = true
         }, CONNECTION_PERIOD)
-
         when(status){
             133 -> {
                 if (!connectionTimedOut){
@@ -350,22 +337,12 @@ class GattCallback(private val context: Activity, private val sensorValueHandler
             BluetoothGatt.GATT_SUCCESS -> {
                 Log.d("debug", "characteristic read succeeded")
                 if(characteristic.value.size == 4){
-                    characteristic.value.forEach {
-                        Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
-                        val setNotificationStatus = gatt.setCharacteristicNotification(characteristic, true)
-                        characteristic.descriptors.forEach { it ->
-                            Log.d("debug", "descriptor: ${it.uuid}");
-                        }
-                        val uuid = UUID.fromString(CCCD_UUID_STR)
-                        val descriptor = characteristic.getDescriptor(uuid)
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        gatt.writeDescriptor(descriptor)
-                        Log.d("debug", "setCharacteristicNotificationStatus: $setNotificationStatus")
-                    }
-                    val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
-                    val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
-                    Log.d("debug", "received pressure sensor 1: $sensorValue1")
-                    Log.d("debug", "received pressure sensor 2: $sensorValue2")
+                    val setNotificationStatus = gatt.setCharacteristicNotification(characteristic, true)
+                    val uuid = UUID.fromString(CCCD_UUID_STR)
+                    val descriptor = characteristic.getDescriptor(uuid)
+                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    gatt.writeDescriptor(descriptor)
+                    Log.d("debug", "setCharacteristicNotificationStatus: $setNotificationStatus")
                 }else{
                     Log.e("debug", "characteristic value format is invalid.")
                 }
@@ -380,9 +357,6 @@ class GattCallback(private val context: Activity, private val sensorValueHandler
     ) {
         Log.d("debug", "onCharacteristicChanged called")
         if(characteristic?.value?.size == 4){
-            characteristic?.value?.forEach {
-                Log.d("debug", "characteristic: ${it.toInt() and 0xFF}")
-            }
             val deviceName = gatt?.device?.name
             if(deviceName != DEVICE_NAME_LEFT && deviceName != DEVICE_NAME_RIGHT) return
             characteristic?.let{ it ->
@@ -395,7 +369,6 @@ class GattCallback(private val context: Activity, private val sensorValueHandler
                 val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
                 sensorValue2Msg.sendToTarget()
             }
-
         }else{
             Log.e("debug", "characteristic value format is invalid.")
         }
