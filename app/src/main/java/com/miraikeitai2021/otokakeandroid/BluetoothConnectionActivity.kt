@@ -7,6 +7,7 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -51,20 +52,21 @@ private const val SENSOR_RIGHT_2 = 10003
 private const val DEVICE_NAME_LEFT = "Otokake_Left"
 private const val DEVICE_NAME_RIGHT = "Otokake_Right"
 
+open class SensorValueHandler(private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit): Handler(Looper.getMainLooper()){
+    override fun handleMessage(msg: Message) {
+        when(msg.what){
+            SENSOR_VALUE_RECEIVE -> {
+                Log.d("debug", "handler called")
+                updateSensorValueTextView(msg.arg1, msg.arg2)
+            }
+        }
+    }
+}
 
 class BluetoothConnectionActivity : AppCompatActivity() {
 
     companion object{
-        private class SensorValueHandler(val bluetoothConnectionActivity: BluetoothConnectionActivity): Handler(Looper.getMainLooper()){
-            override fun handleMessage(msg: Message) {
-                when(msg.what){
-                    SENSOR_VALUE_RECEIVE -> {
-                        Log.d("debug", "handler called")
-                        bluetoothConnectionActivity.updateSensorValueTextView(msg.arg1, msg.arg2)
-                    }
-                }
-            }
-        }
+
     }
 
     private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
@@ -172,19 +174,7 @@ class BluetoothConnectionActivity : AppCompatActivity() {
         }
     }
 
-    /* デバイスのスキャンを行う */
-    private fun startBleConnection(
-        bluetoothAdapter: BluetoothAdapter,
-        deviceName: String
-    ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(this)
-        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName)
-        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
-        bluetoothConnectionThread.start()
-        return bleConnectionRunnable
-    }
-
-    private fun updateSensorValueTextView(positionId: Int, sensorValue: Int){
+    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
         when(positionId){
             SENSOR_LEFT_1 ->{
                 val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
@@ -204,9 +194,21 @@ class BluetoothConnectionActivity : AppCompatActivity() {
             }
         }
     }
+
+    /* デバイスのスキャンを行う */
+    private fun startBleConnection(
+        bluetoothAdapter: BluetoothAdapter,
+        deviceName: String
+    ): BleConnectionRunnable {
+        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName)
+        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
+        bluetoothConnectionThread.start()
+        return bleConnectionRunnable
+    }
 }
 
-class BleConnectionRunnable(private val context: Activity, private val bluetoothAdapter: BluetoothAdapter, private val sensorValueHandler: Handler, deviceName: String): Runnable{
+class BleConnectionRunnable(private val context: BluetoothConnectionActivity, private val bluetoothAdapter: BluetoothAdapter, private val sensorValueHandler: SensorValueHandler, deviceName: String): Runnable{
     /* デバイスがスキャン中かどうかを管理するBoolean変数 */
     private var bleDeviceScanning: Boolean = false
     private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
@@ -236,7 +238,7 @@ class BleConnectionRunnable(private val context: Activity, private val bluetooth
     }
 }
 
-class LeScanCallback(private val context: Activity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: Handler) : ScanCallback(){
+class LeScanCallback(private val context: BluetoothConnectionActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
 
     private var hasAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
@@ -274,7 +276,7 @@ class LeScanCallback(private val context: Activity, private val bluetoothLeScann
 }
 
 // デバイスの接続と切断を管理するコールバック関数
-class GattCallback(private val context: Activity, private val sensorValueHandler: Handler) : BluetoothGattCallback() {
+class GattCallback(private val context: BluetoothConnectionActivity, private val sensorValueHandler: SensorValueHandler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
     private var connectionTimedOut = false
     override fun onConnectionStateChange(
