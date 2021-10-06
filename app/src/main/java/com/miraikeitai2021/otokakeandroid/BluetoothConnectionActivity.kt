@@ -201,18 +201,24 @@ class BluetoothConnectionActivity : AppCompatActivity() {
         deviceName: String
     ): BleConnectionRunnable {
         val sensorValueHandler = SensorValueHandler(updateSensorValueTextView)
-        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName)
+        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName, leScanCallback)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
     }
 }
 
-class BleConnectionRunnable(private val context: BluetoothConnectionActivity, private val bluetoothAdapter: BluetoothAdapter, private val sensorValueHandler: SensorValueHandler, deviceName: String): Runnable{
+class BleConnectionRunnable
+    (private val context: BluetoothConnectionActivity,
+     private val bluetoothAdapter: BluetoothAdapter,
+     private val sensorValueHandler: SensorValueHandler,
+     deviceName: String,
+     private val leScanCallback: LeScanCallback
+): Runnable{
     /* デバイスがスキャン中かどうかを管理するBoolean変数 */
     private var bleDeviceScanning: Boolean = false
     private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-    private val leScanCallback = LeScanCallback(context, bluetoothLeScanner, sensorValueHandler)
     private val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES).build()
     private val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName(deviceName).build())
     override fun run(){
@@ -238,7 +244,7 @@ class BleConnectionRunnable(private val context: BluetoothConnectionActivity, pr
     }
 }
 
-class LeScanCallback(private val context: BluetoothConnectionActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
+open class LeScanCallback(private val context: BluetoothConnectionActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
 
     private var hasAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
