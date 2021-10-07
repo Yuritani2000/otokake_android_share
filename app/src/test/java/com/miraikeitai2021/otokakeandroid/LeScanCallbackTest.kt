@@ -30,13 +30,9 @@ class LeScanCallbackTest : TestCase() {
     private val SENSOR_VALUE_RECEIVE = 100
 
     private lateinit var bluetoothLeScannerMock: BluetoothLeScanner
-
     private lateinit var bluetoothGattMock: BluetoothGatt
-
     private lateinit var resultMock: ScanResult
-
     private lateinit var context: BluetoothConnectionActivity
-
     private lateinit var mockHandler: SensorValueHandler
 
     @Before
@@ -58,8 +54,6 @@ class LeScanCallbackTest : TestCase() {
         context = BluetoothConnectionActivity()
         mockHandler = mock<SensorValueHandler>{}
     }
-
-    public override fun tearDown() {}
 
     @Test
     fun testOnScanResultSucceed(){
@@ -115,7 +109,4 @@ class LeScanCallbackTest : TestCase() {
             on {device.connectGatt( any<BluetoothConnectionActivity>(), eq(true), any<GattCallback>() )}.then {  }
         }
     }
-
-
-
 }

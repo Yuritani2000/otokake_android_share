@@ -37,9 +37,6 @@ class BleConnectionRunnableTest : TestCase() {
         sensorValueHandlerMock = mock<SensorValueHandler>()
     }
 
-    @After
-    public override fun tearDown() {}
-
     @Test
     fun testDisconnectSucceed(){
         // bluetoothLeScannerのモック

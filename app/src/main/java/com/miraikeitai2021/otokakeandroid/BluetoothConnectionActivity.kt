@@ -291,19 +291,6 @@ class GattCallback(private val context: BluetoothConnectionActivity, private val
         Handler(Looper.getMainLooper()).postDelayed({
             connectionTimedOut = true
         }, CONNECTION_PERIOD)
-        when(status){
-            133 -> {
-                if (!connectionTimedOut){
-                    Log.d("debug", "connection failed, retrying...")
-                    gatt?.close()
-                    gatt?.device?.connectGatt(context, true, this)
-                }else{
-                    gatt?.close()
-                    connectionTimedOut = false
-                    Log.d("debug", "connection failed, connection timed out")
-                }
-            }
-        }
         when (newState) {
             BluetoothProfile.STATE_CONNECTED -> {
                 connectionState = STATE_CONNECTED
@@ -314,6 +301,20 @@ class GattCallback(private val context: BluetoothConnectionActivity, private val
             BluetoothProfile.STATE_DISCONNECTED -> {
                 connectionState = STATE_DISCONNECTED
                 Log.d("debug", "Disconnected from GATT server.")
+                gatt?.close()
+                when(status){
+                    133 -> {
+                        if (!connectionTimedOut){
+                            Log.d("debug", "connection failed, retrying...")
+                            gatt?.device?.connectGatt(context, true, this)
+                        }else{
+                            connectionTimedOut = false
+                            Log.d("debug", "connection failed, connection timed out")
+                        }
+                    }
+                }
+            }
+            else -> {
                 gatt?.close()
             }
         }
@@ -352,7 +353,6 @@ class GattCallback(private val context: BluetoothConnectionActivity, private val
                 }else{
                     Log.e("debug", "characteristic value format is invalid.")
                 }
-
             }
         }
     }
