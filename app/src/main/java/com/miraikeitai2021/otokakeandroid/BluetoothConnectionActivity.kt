@@ -202,17 +202,15 @@ class BluetoothConnectionActivity : AppCompatActivity() {
     ): BleConnectionRunnable {
         val sensorValueHandler = SensorValueHandler(updateSensorValueTextView)
         val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
-        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, sensorValueHandler, deviceName, leScanCallback)
+        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
     }
 }
 
-class BleConnectionRunnable
-    (private val context: BluetoothConnectionActivity,
+class BleConnectionRunnable(
      private val bluetoothAdapter: BluetoothAdapter,
-     private val sensorValueHandler: SensorValueHandler,
      deviceName: String,
      private val leScanCallback: LeScanCallback
 ): Runnable{
