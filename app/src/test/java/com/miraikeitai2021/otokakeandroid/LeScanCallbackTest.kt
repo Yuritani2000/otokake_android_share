@@ -106,7 +106,12 @@ class LeScanCallbackTest : TestCase() {
     fun testDisconnectGattFailed(){
         val leScanCallback = LeScanCallback(context, bluetoothLeScannerMock, mockHandler)
         val failedResultMock = mock<ScanResult> (defaultAnswer = RETURNS_DEEP_STUBS) {
-            on {device.connectGatt( any<BluetoothConnectionActivity>(), eq(true), any<GattCallback>() )}.then {  }
+            on {device.connectGatt( any<BluetoothConnectionActivity>(), eq(true), any<GattCallback>() )} doReturn null
         }
+
+        leScanCallback.onScanResult(0, failedResultMock)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        leScanCallback.disconnectGatt()
+        verify(bluetoothGattMock, times(0)).close()
     }
 }
