@@ -41,6 +41,7 @@ const val CONNECTION_PERIOD = 5000L
 
 /* BLEデバイスの値を処理するスレッドから，UIスレッドに値を渡すときのHandlerで使用する定数 */
 private const val SENSOR_VALUE_RECEIVE = 100
+private const val FOOT_ON_THE_GROUND = 101
 
 /* BLEデバイスの値をUIスレッドで更新する際，どの値を更新するのかを指定する為のID*/
 private const val SENSOR_LEFT_1 = 10000
@@ -58,6 +59,9 @@ open class SensorValueHandler(private val updateSensorValueTextView: (positionId
             SENSOR_VALUE_RECEIVE -> {
                 Log.d("debug", "handler called")
                 updateSensorValueTextView(msg.arg1, msg.arg2)
+            }
+            FOOT_ON_THE_GROUND -> {
+                Log.d("debug", "${msg.obj} on the ground")
             }
         }
     }
@@ -357,23 +361,53 @@ class GattCallback(private val context: BluetoothConnectionActivity, private val
         }
     }
 
+    private val gap = arrayOf(0,0)
+    private var notificationCount = 0
+
+    // 前後1つずつ，3ms分の移動平均フィルタをとりあえずかける．
+    private var movingAverageArray = arrayOf(0, 0, 0)
+
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt?,
         characteristic: BluetoothGattCharacteristic?
     ) {
-        Log.d("debug", "onCharacteristicChanged called")
+//        Log.d("debug", "onCharacteristicChanged called")
         if(characteristic?.value?.size == 4){
             val deviceName = gatt?.device?.name
             if(deviceName != DEVICE_NAME_LEFT && deviceName != DEVICE_NAME_RIGHT) return
             characteristic?.let{ it ->
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
-                Log.d("debug", "received pressure sensor 1: $sensorValue1")
-                Log.d("debug", "received pressure sensor 2: $sensorValue2")
-                val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
-                sensorValue1Msg.sendToTarget()
-                val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
-                sensorValue2Msg.sendToTarget()
+                for(i in movingAverageArray.indices){
+                    if(i == movingAverageArray.size-1){
+                        movingAverageArray[i] = sensorValue1
+                    }else{
+                        movingAverageArray[i] = movingAverageArray[i + 1]
+                    }
+                }
+//                movingAverageArray.forEachIndexed { index, i ->
+//                    Log.d("debug", "movingAverage[$index]: $i")
+//                }
+                val movingAverage = movingAverageArray.sum() / movingAverageArray.size
+//                Log.d("debug", "moving average: $movingAverage")
+//                Log.d("debug", "received pressure sensor 1: $sensorValue1")
+//                Log.d("debug", "received pressure sensor 2: $sensorValue2")
+                if(notificationCount >= 5){
+                    gap[0] = gap[1]
+                    gap[1] = movingAverage
+//                    Log.d("debug", "gap[0]: ${gap[0]}, gap[1]: ${gap[1]}")
+                    if(gap[1] < 1024 && (gap[1] - gap[0]) / 5 <= -256 ){
+                        Log.d("debug", "gap[0]: ${gap[0]}, gap[1]: ${gap[1]}")
+                        val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
+                        footOnTheGroundMsg.sendToTarget()
+                    }
+                    notificationCount = 0
+                }
+//                val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
+//                sensorValue1Msg.sendToTarget()
+//                val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
+//                sensorValue2Msg.sendToTarget()
+                notificationCount++;
             }
         }else{
             Log.e("debug", "characteristic value format is invalid.")
