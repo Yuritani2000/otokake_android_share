@@ -7,13 +7,18 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.hardware.Sensor
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.SoundPool
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -53,7 +58,10 @@ private const val SENSOR_RIGHT_2 = 10003
 private const val DEVICE_NAME_LEFT = "Otokake_Left"
 private const val DEVICE_NAME_RIGHT = "Otokake_Right"
 
-open class SensorValueHandler(private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit): Handler(Looper.getMainLooper()){
+open class SensorValueHandler(
+    private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit,
+    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit
+): Handler(Looper.getMainLooper()){
     override fun handleMessage(msg: Message) {
         when(msg.what){
             SENSOR_VALUE_RECEIVE -> {
@@ -62,6 +70,7 @@ open class SensorValueHandler(private val updateSensorValueTextView: (positionId
             }
             FOOT_ON_THE_GROUND -> {
                 Log.d("debug", "${msg.obj} on the ground")
+                handleFootTouchWithTheGround(msg.obj.toString())
             }
         }
     }
@@ -199,12 +208,51 @@ class BluetoothConnectionActivity : AppCompatActivity() {
         }
     }
 
+    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
+        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+        val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
+        playFootSound(footSoundPool, audioAttributes, soundId)
+        when(deviceName){
+            DEVICE_NAME_LEFT -> {
+                val notifyLeftFootOnTheGroundView =
+                findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
+                notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                Handler(Looper.getMainLooper()).postDelayed({
+                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                }, 500L)
+            }
+            DEVICE_NAME_RIGHT -> {
+                val notifyRightFootOnTheGroundView =
+                    findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
+                notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                Handler(Looper.getMainLooper()).postDelayed({
+                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                }, 500L)
+            }
+            else -> {
+                Log.e("debug", "Invalid device name: $deviceName")
+            }
+        }
+    }
+
+    fun playFootSound(footSoundPool: SoundPool, audioAttributes: AudioAttributes, soundId: Int){
+        footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
+            Log.d("debug", "sound should be played")
+            val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
+            Handler(Looper.getMainLooper()).postDelayed({
+                soundPool.stop(streamId)
+                soundPool.release()
+            }, 500L)
+        }
+    }
+
     /* デバイスのスキャンを行う */
     private fun startBleConnection(
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView)
+        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
         val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
         val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
