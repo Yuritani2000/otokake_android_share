@@ -1,11 +1,15 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.content.Context
+import android.media.MediaPlayer
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.Toast
 
 class Musiclist : AppCompatActivity() {
 
@@ -19,39 +23,9 @@ class Musiclist : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_musiclist)
 
-        /*
-        db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
-        val db1Dao = db1.PlaylistDao()  //Daoと接続
-        var newlist1 = Playlist(0,"J-POP")  //適当なデータを用意
-        db1Dao.insert(newlist1) //上のデータをDBに追加
-        newlist1 = Playlist(0,"ボカロ")    //2つ目のデータ(idを0にすると勝手に番号付けしてくれる)
-        db1Dao.insert(newlist1)
-        newlist1 = Playlist(0,"アニソン")
-        db1Dao.insert(newlist1)
-        Log.v("TAG","test insert ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
-        */
-
         db2 = MusicDatabase.getInstance(this)   //MusicのDBでも同じ操作してる
         val db2Dao = db2.MusicDao()
         Log.v("TAG","test insert ${db2Dao.getAll().toString()}")
-
-        /*
-        //色々試運転した残り
-        db3 = MiddlelistDatabase.getInstance(this)
-        val db3Dao = db3.MiddlelistDao()
-        var newlist3 = Middlelist(0,1,1)
-        db3Dao.insert(newlist3)
-        newlist3 = Middlelist(0,1,2)
-        db3Dao.insert(newlist3)
-        newlist3 = Middlelist(0,2,1)
-        db3Dao.insert(newlist3)
-        db3Dao.insertMusic(1,3)
-        Log.v("TAG","test insert ${db3Dao.getAll().toString()}")
-        Log.v("TAG","test insert ${db3Dao.getPlaylist(1).toString()}")
-        db3Dao.deletePlaylist(1)
-        Log.v("TAG","test insert ${db3Dao.getAll().toString()}")
-
-         */
 
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -90,7 +64,68 @@ class Musiclist : AppCompatActivity() {
         val listView: ListView = findViewById(R.id.listview)
         listView.adapter = adapter
 
+        lateinit var mediaPlayer: MediaPlayer
+        
+        listView.setOnItemClickListener { parent, view, position, id -> //リストクリック時の処理
+            mediaPlayer = MediaPlayer.create(this, checkUri(this, db2Dao.getId(list[position])))    //再生の準備
+            mediaPlayer.isLooping = false
+            mediaPlayer.start() //再生開始
+            playNext(db2Dao,mediaPlayer,this,position+1,list)
+        }
     }
 
 
+}
+
+fun checkUri(context: Context, musicId: Long): Uri {
+
+    //projection: 欲しい情報を定義
+    val projection = arrayOf(
+        MediaStore.Audio.Media._ID,
+        MediaStore.Audio.Media.DISPLAY_NAME
+    )
+
+    //selection: filterでAudioFileのみのIDを得るように定義
+    val selection = MediaStore.Audio.Media._ID + "=" + musicId.toString()
+
+    //上のprojectionとselectionを利用した問い合わせ変数を作製
+    val cursor = context.contentResolver.query(
+        MediaStore.Audio.Media.INTERNAL_CONTENT_URI, //外部ストレージ
+        projection,
+        selection,  // selection,
+        null, // selectionArgs,
+        null
+    )
+
+    lateinit var contentUri: Uri
+
+    cursor?.use{
+        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+        val displayNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
+
+        while (cursor.moveToNext()) {
+            val id = cursor.getLong(idColumn)
+            val displayName = cursor.getString(displayNameColumn)
+            contentUri = Uri.withAppendedPath(
+                MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
+                id.toString()
+            )
+            Toast.makeText(context,
+                "id: $id, displayName: $displayName, contentUir: $contentUri", Toast.LENGTH_LONG).show()
+        }
+    }
+    return contentUri
+}
+
+fun playNext(db2Dao: MusicDao,mediaPlayer: MediaPlayer,context: Context,i: Int,list: List<String>){
+    if(i < list.lastIndex){
+        mediaPlayer.setOnCompletionListener {   //再生終了したときの処理
+            mediaPlayer.release()   //mediaPlayerの停止
+            lateinit var mediaPlayer: MediaPlayer
+            mediaPlayer = MediaPlayer.create(context, checkUri(context, db2Dao.getId(list[i]))) //次の曲の再生準備
+            mediaPlayer.isLooping = false
+            mediaPlayer.start() //再生開始
+            playNext(db2Dao, mediaPlayer, context, i+1, list)   //再帰で次の曲の再生へ
+        }
+    }
 }

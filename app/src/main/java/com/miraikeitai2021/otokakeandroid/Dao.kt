@@ -54,6 +54,9 @@ interface MusicDao{
 
     @Query("SELECT title FROM Music")
     fun getMusic(): List<String>
+
+    @Query("SELECT storage_id FROM Music WHERE title = :Title")
+    fun getId(Title: String): Long
 }
 
 
