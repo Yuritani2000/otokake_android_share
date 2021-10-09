@@ -1,4 +1,11 @@
 <resources>
-    <string name="app_name">OtokakeAndroid</string>
-    <string name="test" />
+    <string name="app_name">再生リスト</string>
+    <string name="btn_list_add">Add PlayList</string>
+    <string name="dialog_title">新規プレイリスト</string>
+    <string name="dialog_msg">新規プレイリストの名前を入力してください</string>
+    <string name="dialog_btn_ok">作成</string>
+    <string name="dialog_btn_ng">キャンセル</string>
+    <string name="tentative_text">テスト</string>
+    <string name="duplicateName_ng">名前が重複しているため新規プレイリストの作成に失敗しました</string>
+    <string name="make_playlist_cancel">新規プレイリストの作成をキャンセルしました</string>
 </resources>

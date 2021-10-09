@@ -3,8 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/drawable/add_icon.xml" value="0.1" />
         <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/layout/activity_main.xml" value="0.17617753623188406" />
         <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/layout/activity_musiclist.xml" value="0.17119565217391305" />
+        <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/layout/activity_playlist.xml" value="0.264" />
+        <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/layout/addplaylistdialog_layout.xml" value="0.1" />
+        <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/layout/playlist_row.xml" value="0.1" />
+        <entry key="..\:/Users/1921056/AndroidStudioProjects/Otokake_Android/app/src/main/res/menu/menu_options_list.xml" value="0.25416666666666665" />
       </map>
     </option>
   </component>
