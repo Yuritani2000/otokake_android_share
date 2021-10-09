@@ -1,5 +1,6 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
@@ -8,22 +9,23 @@ import android.widget.Toast
 class CheckMusicUri {
 
     /**
-     * ストレージからUriを得るメソッド
-     * context：Activityのcontext, misicId：再生したい音楽のID
+     * ストレージにある曲のUriを取得するメソッド
+     * context: 呼び出し元ActivityのContext
+     * id: ストレージにある曲のid
      */
-    fun checkUri(context: Context, musicId: Int): Uri {
+    fun checkUri(context: Context, id: Int, contentResolver: ContentResolver): Uri {
 
         //projection: 欲しい情報を定義
         val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.DISPLAY_NAME
+            MediaStore.Audio.Media._ID
         )
 
-        //selection: filterでAudioFileのみのIDを得るように定義
-        val selection = MediaStore.Audio.Media._ID + "=" + musicId.toString()
+        //selection: filterで指定したIDの音楽ファイルのみURIを得るように定義
+        val selection = MediaStore.Audio.Media._ID + "=" + id
+
 
         //上のprojectionとselectionを利用した問い合わせ変数を作製
-        val cursor = context.contentResolver.query(
+        val cursor = contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, //外部ストレージ
             projection,
             selection,  // selection,
@@ -31,23 +33,31 @@ class CheckMusicUri {
             null
         )
 
-        lateinit var contentUri: Uri
+        var contentUri: Uri = Uri.parse("null")
 
         cursor?.use{
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-            val displayNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
 
             while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-                val displayName = cursor.getString(displayNameColumn)
+                val sid = cursor.getLong(idColumn)
+
                 contentUri = Uri.withAppendedPath(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    id.toString()
+                    sid.toString()
                 )
-                Toast.makeText(context,
-                    "id: $id, displayName: $displayName, contentUir: $contentUri", Toast.LENGTH_LONG).show()
             }
         }
+
+        /**
+         * テスト用．
+         * でも，MediaStore.Audio.Media.EXTERNAL_CONTENT_URIの値が固定で，
+         * IDによって変わるだけだから，結局これでもいいのでは？
+         */
+        contentUri = Uri.withAppendedPath(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            id.toString()
+        )
+
         return contentUri
     }
 }
