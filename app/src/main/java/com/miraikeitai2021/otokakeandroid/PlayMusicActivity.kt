@@ -16,7 +16,7 @@ class PlayMusicActivity : AppCompatActivity() {
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    private val musicId: Int = 32 //保存したときに確認したIDの値を入れておく．
+    private val musicId: Int = 12237 //保存したときに確認したIDの値を入れておく．
 
     private lateinit var binding: ActivityPlayMusicBinding
 
@@ -29,7 +29,7 @@ class PlayMusicActivity : AppCompatActivity() {
         //************************************************************
         //保存用
         //val strageMusic = StrageMusic()
-        //strageMusic.StrageInMusic(this)
+//        strageMusic.StrageInMusic(this)
 
         //↓ID検索用
 /*
