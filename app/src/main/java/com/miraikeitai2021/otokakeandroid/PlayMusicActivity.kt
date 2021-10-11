@@ -74,15 +74,23 @@ class PlayMusicActivity : AppCompatActivity() {
         }
 
  */
-
-
-
         //************************************************************************************
 
         binding.startButton.setOnClickListener { tappedStartButton() }
         binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
 
+    }
+
+    /**
+    * スタートボタンとストップボタン兼用のボタンのリスナー
+    * */
+    private fun onClickStartAndStopButton(){
+        if(playMusic.isPlaying()){
+            tappedStartButton()
+        }else{
+            tappedStartButton()
+        }
     }
 
     /**

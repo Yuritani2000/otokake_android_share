@@ -26,17 +26,17 @@ import androidx.core.content.ContextCompat
 import java.util.*
 
 // Bluetoothの有効化をリクエストするIntentに関するリクエストコード
-private const val REQUEST_ENABLE_BT = 1000
-private const val REQUEST_ACCESS_FINE_LOCATION = 1001
+const val REQUEST_ENABLE_BT = 1000
+const val REQUEST_ACCESS_FINE_LOCATION = 1001
 
 // BLE端末をスキャンする時間をさだめる。今回は10秒。
-private const val SCAN_PERIOD = 10000L
+const val SCAN_PERIOD = 10000L
 
 // BLE端末を検出してから接続するまでのインターバル．この間にデバイスの検索を止める．
-private const val CONNECTION_INTERVAL = 500L
+const val CONNECTION_INTERVAL = 500L
 
 // GATT定義ディスクリプタの一つ．である，CCCD(Client Characteristic Configuration Descriptor). 端末にNotiyやIndicateを制御するにはこれが使われる．
-private const val CCCD_UUID_STR = "00002902-0000-1000-8000-00805f9b34fb"
+const val CCCD_UUID_STR = "00002902-0000-1000-8000-00805f9b34fb"
 
 /* GattCallbackにおいて，接続を制御する際に使用する定数． */
 const val STATE_DISCONNECTED = 0
@@ -45,18 +45,18 @@ const val STATE_CONNECTED = 2
 const val CONNECTION_PERIOD = 5000L
 
 /* BLEデバイスの値を処理するスレッドから，UIスレッドに値を渡すときのHandlerで使用する定数 */
-private const val SENSOR_VALUE_RECEIVE = 100
-private const val FOOT_ON_THE_GROUND = 101
+const val SENSOR_VALUE_RECEIVE = 100
+const val FOOT_ON_THE_GROUND = 101
 
 /* BLEデバイスの値をUIスレッドで更新する際，どの値を更新するのかを指定する為のID*/
-private const val SENSOR_LEFT_1 = 10000
-private const val SENSOR_LEFT_2 = 10001
-private const val SENSOR_RIGHT_1 = 10002
-private const val SENSOR_RIGHT_2 = 10003
+const val SENSOR_LEFT_1 = 10000
+const val SENSOR_LEFT_2 = 10001
+const val SENSOR_RIGHT_1 = 10002
+const val SENSOR_RIGHT_2 = 10003
 
 /* 左右それぞれの足裏デバイスの名前， */
-private const val DEVICE_NAME_LEFT = "Otokake_Left"
-private const val DEVICE_NAME_RIGHT = "Otokake_Right"
+const val DEVICE_NAME_LEFT = "Otokake_Left"
+const val DEVICE_NAME_RIGHT = "Otokake_Right"
 
 open class SensorValueHandler(
     private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit,

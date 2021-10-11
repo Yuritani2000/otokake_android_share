@@ -105,4 +105,15 @@ class PlayMusic(context: Context) {
     fun getChengedMusicSpeed(): Float{
         return chengedMusicSpeed
     }
+
+    /**
+     * 曲が再生用かどうかの状態を取得する
+     */
+    fun isPlaying(): Boolean{
+        val isPlaying =  mediaPlayer?.isPlaying
+        isPlaying?.let {
+            return it
+        }
+        return false
+    }
 }
