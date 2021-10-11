@@ -434,14 +434,15 @@ class GattCallback(private val context: BluetoothConnectionActivity, private val
                     }
                 }
                 val movingAverage = movingAverageArray.sum() / movingAverageArray.size
+                if(notificationCount >= 5){
                     gap[0] = gap[1]
                     gap[1] = movingAverage
-                    if(gap[1] < 1024 && (gap[1] - gap[0]) / 5 <= -100 ){
+                    if(gap[1] < 1024 && (gap[1] - gap[0]) / 5 <= -150 ){
                         Log.d("debug", "gap[0]: ${gap[0]}, gap[1]: ${gap[1]}")
                         val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                         footOnTheGroundMsg.sendToTarget()
                     }
-                if(notificationCount >= 10){
+
                     notificationCount = 0
 
                     val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)

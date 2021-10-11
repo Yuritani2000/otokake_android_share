@@ -11,4 +11,8 @@
     <string name="right_device">右足デバイス</string>
     <string name="sensor_1">センサ1</string>
     <string name="sensor_2">センサ2</string>
+    <string name="start_button_string">START_MUSIC</string>
+    <string name="stop_button_string">STOP_MUSIC</string>
+    <string name="bluetooth_event_string">BLUETOOTH_EVENT</string>
+    <string name="text_string">NULL</string>
 </resources>
