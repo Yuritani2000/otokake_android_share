@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.net.Uri
+import android.util.Log
 import java.io.IOException
 
 class PlayMusic(context: Context) {
@@ -11,7 +12,7 @@ class PlayMusic(context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var playBackParams: PlaybackParams
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
-    private var chengedMusicSpeed = 0f
+    private var changedMusicSpeed = 0f
 
     /**
      * 音楽を再生するメソッド
@@ -64,11 +65,18 @@ class PlayMusic(context: Context) {
             playBackParams = PlaybackParams()
 
             if(orgMusicSpeed > 0.0f){
-                chengedMusicSpeed = runSpeed / orgMusicSpeed
+                changedMusicSpeed = runSpeed / orgMusicSpeed
             }else{
-                chengedMusicSpeed = 0.001f
+                changedMusicSpeed = 0.001f
             }
-            mediaPlayer!!.setPlaybackParams(playBackParams.setSpeed(chengedMusicSpeed))
+            if(changedMusicSpeed < 0.1f || changedMusicSpeed > 6.0f){
+                return
+            }
+            Log.d("debug", "PlaybackParams instance: $playBackParams")
+            Log.d("debug", "changedMusicSpeed: $changedMusicSpeed")
+            val speed = playBackParams.setSpeed(changedMusicSpeed)
+            Log.d("debug", "playbackParams instance: $speed")
+            mediaPlayer!!.setPlaybackParams(speed)
             /*
             Toast.makeText(
                 myContext,
@@ -103,7 +111,7 @@ class PlayMusic(context: Context) {
      * chengedMusicSpeedの値取得
      */
     fun getChengedMusicSpeed(): Float{
-        return chengedMusicSpeed
+        return changedMusicSpeed
     }
 
     /**

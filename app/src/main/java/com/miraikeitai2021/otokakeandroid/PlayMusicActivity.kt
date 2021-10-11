@@ -1,14 +1,29 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
 
 class PlayMusicActivity : AppCompatActivity() {
@@ -19,6 +34,11 @@ class PlayMusicActivity : AppCompatActivity() {
     private val musicId: Int = 12237 //保存したときに確認したIDの値を入れておく．
 
     private lateinit var binding: ActivityPlayMusicBinding
+
+    // 左足デバイスと通信してデータを受け取るスレッド
+    private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
+    // 右足デバイスと通信してデータを受け取るスレッド
+    private var bleConnectionRunnableRight: BleConnectionRunnable? = null
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,6 +100,58 @@ class PlayMusicActivity : AppCompatActivity() {
         binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
 
+
+        // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
+        fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
+
+        packageManager.takeIf { it.missingSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) }?.also {
+            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
+        val bluetoothAdapter: BluetoothAdapter? by lazy(LazyThreadSafetyMode.NONE){
+            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            bluetoothManager.adapter
+        }
+
+        bluetoothAdapter?.takeIf { it.isDisabled }?.apply {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+
+        // 位置情報の使用許可リクエスト
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
+        }
+
+
+        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
+        searchLeftDeviceButton.setOnClickListener {
+            bluetoothAdapter?.let{
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
+                }
+            }
+        }
+
+        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
+        searchRightDeviceButton.setOnClickListener {
+            bluetoothAdapter?.let{
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
+                }
+            }
+        }
+
+        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
+        disconnectLeftDeviceButton.setOnClickListener {
+            bleConnectionRunnableLeft?.disconnect()
+        }
+
+        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
+        disconnectRightDeviceButton.setOnClickListener {
+            bleConnectionRunnableLeft?.disconnect()
+        }
     }
 
     /**
@@ -126,5 +198,147 @@ class PlayMusicActivity : AppCompatActivity() {
         text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
                 "runBpm: ${checkRunBpm.getRunBpm()}  " +
                 "musicSpeed: ${playMusic.getChengedMusicSpeed()}  ")
+    }
+
+    /**
+     * Bluetoothが有効であることを確認する。ためのメソッド．BluetoothAdapterを拡張している？
+      */
+    private val BluetoothAdapter.isDisabled: Boolean
+        get() = !isEnabled
+
+    /**
+     * 本体のBluetoothの有効化をユーザーに求めた後に呼び出される．
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when(requestCode){
+            REQUEST_ENABLE_BT -> {
+                when(resultCode) {
+                    RESULT_OK -> {
+                        Toast.makeText(this, R.string.bluetooth_enabled, Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        Toast.makeText(this, R.string.bluetooth_not_enabled_warning, Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 位置情報の有効化をユーザーに求めた後に呼び出される．
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when(requestCode){
+            REQUEST_ACCESS_FINE_LOCATION -> {
+                if ((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, R.string.access_fine_location_denied_warning, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    /**
+     * SensorValueHandlerから圧力の値を受け取った時，圧力の計測値を示すTextViewを更新するラムダ式．
+     * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
+     */
+    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
+        when(positionId){
+            SENSOR_LEFT_1 ->{
+                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
+                sensorValueLeft1TextView.text = sensorValue.toString()
+            }
+            SENSOR_LEFT_2 ->{
+                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
+                sensorValueLeft2TextView.text = sensorValue.toString()
+            }
+            SENSOR_RIGHT_1 ->{
+                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
+                sensorValueRight1TextView.text = sensorValue.toString()
+            }
+            SENSOR_RIGHT_2 ->{
+                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
+                sensorValueRight2TextView.text = sensorValue.toString()
+            }
+        }
+    }
+
+    /**
+     * SensorValueHandlerが足と地面の接触を検知したときに呼び出されるメソッド，
+     * こちらも，SensorValueHandlerに渡すためにラムダ式にする．
+     */
+    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
+        tappedBluetoothButton()
+        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
+            AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+        val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
+        playFootSound(footSoundPool, audioAttributes, soundId)
+        when(deviceName){
+            DEVICE_NAME_LEFT -> {
+                val notifyLeftFootOnTheGroundView =
+                    findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
+                notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                Handler(Looper.getMainLooper()).postDelayed({
+                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                }, 500L)
+            }
+            DEVICE_NAME_RIGHT -> {
+                val notifyRightFootOnTheGroundView =
+                    findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
+                notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                Handler(Looper.getMainLooper()).postDelayed({
+                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                }, 500L)
+            }
+            else -> {
+                Log.e("debug", "Invalid device name: $deviceName")
+            }
+        }
+    }
+
+    /**
+     * 足と地面が接したときに足音の再生を行う．
+     */
+    fun playFootSound(footSoundPool: SoundPool, audioAttributes: AudioAttributes, soundId: Int){
+        footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
+            Log.d("debug", "sound should be played")
+            val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
+            Handler(Looper.getMainLooper()).postDelayed({
+                soundPool.stop(streamId)
+                soundPool.release()
+            }, 500L)
+        }
+    }
+
+    /**
+     * デバイスのスキャンを行う．
+     */
+    private fun startBleConnection(
+        bluetoothAdapter: BluetoothAdapter,
+        deviceName: String
+    ): BleConnectionRunnable {
+        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
+        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
+        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
+        bluetoothConnectionThread.start()
+        return bleConnectionRunnable
+    }
+
+    /**
+     * Activityが終わるたびに，Bluetoothの接続を切っておく必要がある．
+     */
+    override fun onPause() {
+        super.onPause()
+        bleConnectionRunnableLeft?.disconnect()
+        bleConnectionRunnableRight?.disconnect()
     }
 }

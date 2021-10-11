@@ -75,191 +75,191 @@ open class SensorValueHandler(
         }
     }
 }
-
-class BluetoothConnectionActivity : AppCompatActivity() {
-
-    companion object{
-
-    }
-
-    private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
-    private var bleConnectionRunnableRight: BleConnectionRunnable? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_bluetooth_connection)
-
-        // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
-        fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
-
-        packageManager.takeIf { it.missingSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) }?.also {
-            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show()
-            finish()
-        }
-
-        val bluetoothAdapter: BluetoothAdapter? by lazy(LazyThreadSafetyMode.NONE){
-            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-            bluetoothManager.adapter
-        }
-
-        bluetoothAdapter?.takeIf { it.isDisabled }?.apply {
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-        }
-
-        // 位置情報の使用許可リクエスト
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
-        }
-
-
-        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
-        searchLeftDeviceButton.setOnClickListener {
-            bluetoothAdapter?.let{
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
-                }
-            }
-        }
-
-        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
-        searchRightDeviceButton.setOnClickListener {
-            bluetoothAdapter?.let{
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
-                }
-            }
-        }
-
-        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-        disconnectLeftDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
-
-        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-        disconnectRightDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
-
-    }
-
-    override fun onPause() {
-        super.onPause()
-        bleConnectionRunnableLeft?.disconnect()
-        bleConnectionRunnableRight?.disconnect()
-    }
-
-    // Bluetoothが有効であることを確認する。
-    private val BluetoothAdapter.isDisabled: Boolean
-        get() = !isEnabled
-
-    /* Bluetooth有効化を求めた後に呼び出される関数。 */
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when(requestCode){
-            REQUEST_ENABLE_BT -> {
-                when(resultCode) {
-                    RESULT_OK -> {
-                        Toast.makeText(this, R.string.bluetooth_enabled, Toast.LENGTH_SHORT).show()
-                    }
-                    else -> {
-                        Toast.makeText(this, R.string.bluetooth_not_enabled_warning, Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
-                }
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when(requestCode){
-            REQUEST_ACCESS_FINE_LOCATION -> {
-                if ((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, R.string.access_fine_location_denied_warning, Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-            }
-        }
-    }
-
-    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-        when(positionId){
-            SENSOR_LEFT_1 ->{
-                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-                sensorValueLeft1TextView.text = sensorValue.toString()
-            }
-            SENSOR_LEFT_2 ->{
-                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-                sensorValueLeft2TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_1 ->{
-                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-                sensorValueRight1TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_2 ->{
-                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-                sensorValueRight2TextView.text = sensorValue.toString()
-            }
-        }
-    }
-
-    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
-        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-        val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
-        val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-        playFootSound(footSoundPool, audioAttributes, soundId)
-        when(deviceName){
-            DEVICE_NAME_LEFT -> {
-                val notifyLeftFootOnTheGroundView =
-                findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
-                notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
-                Handler(Looper.getMainLooper()).postDelayed({
-                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
-                }, 500L)
-            }
-            DEVICE_NAME_RIGHT -> {
-                val notifyRightFootOnTheGroundView =
-                    findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
-                notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
-                Handler(Looper.getMainLooper()).postDelayed({
-                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
-                }, 500L)
-            }
-            else -> {
-                Log.e("debug", "Invalid device name: $deviceName")
-            }
-        }
-    }
-
-    fun playFootSound(footSoundPool: SoundPool, audioAttributes: AudioAttributes, soundId: Int){
-        footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
-            Log.d("debug", "sound should be played")
-            val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
-            Handler(Looper.getMainLooper()).postDelayed({
-                soundPool.stop(streamId)
-                soundPool.release()
-            }, 500L)
-        }
-    }
-
-    /* デバイスのスキャンを行う */
-    private fun startBleConnection(
-        bluetoothAdapter: BluetoothAdapter,
-        deviceName: String
-    ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
-        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
-        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
-        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
-        bluetoothConnectionThread.start()
-        return bleConnectionRunnable
-    }
-}
+//
+//class BluetoothConnectionActivity : AppCompatActivity() {
+//
+//    companion object{
+//
+//    }
+//
+//    private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
+//    private var bleConnectionRunnableRight: BleConnectionRunnable? = null
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_bluetooth_connection)
+//
+//        // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
+//        fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
+//
+//        packageManager.takeIf { it.missingSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) }?.also {
+//            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show()
+//            finish()
+//        }
+//
+//        val bluetoothAdapter: BluetoothAdapter? by lazy(LazyThreadSafetyMode.NONE){
+//            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+//            bluetoothManager.adapter
+//        }
+//
+//        bluetoothAdapter?.takeIf { it.isDisabled }?.apply {
+//            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+//        }
+//
+//        // 位置情報の使用許可リクエスト
+//        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+//            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
+//        }
+//
+//
+//        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
+//        searchLeftDeviceButton.setOnClickListener {
+//            bluetoothAdapter?.let{
+//                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+//                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
+//                }
+//            }
+//        }
+//
+//        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
+//        searchRightDeviceButton.setOnClickListener {
+//            bluetoothAdapter?.let{
+//                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+//                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
+//                }
+//            }
+//        }
+//
+//        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
+//        disconnectLeftDeviceButton.setOnClickListener {
+//            bleConnectionRunnableLeft?.disconnect()
+//        }
+//
+//        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
+//        disconnectRightDeviceButton.setOnClickListener {
+//            bleConnectionRunnableLeft?.disconnect()
+//        }
+//
+//    }
+//
+//    override fun onPause() {
+//        super.onPause()
+//        bleConnectionRunnableLeft?.disconnect()
+//        bleConnectionRunnableRight?.disconnect()
+//    }
+//
+//    // Bluetoothが有効であることを確認する。
+//    private val BluetoothAdapter.isDisabled: Boolean
+//        get() = !isEnabled
+//
+//    /* Bluetooth有効化を求めた後に呼び出される関数。 */
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//        when(requestCode){
+//            REQUEST_ENABLE_BT -> {
+//                when(resultCode) {
+//                    RESULT_OK -> {
+//                        Toast.makeText(this, R.string.bluetooth_enabled, Toast.LENGTH_SHORT).show()
+//                    }
+//                    else -> {
+//                        Toast.makeText(this, R.string.bluetooth_not_enabled_warning, Toast.LENGTH_SHORT).show()
+//                        finish()
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<out String>,
+//        grantResults: IntArray
+//    ) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        when(requestCode){
+//            REQUEST_ACCESS_FINE_LOCATION -> {
+//                if ((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+//                    Toast.makeText(this, R.string.access_fine_location_denied_warning, Toast.LENGTH_SHORT).show()
+//                    finish()
+//                }
+//            }
+//        }
+//    }
+//
+//    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
+//        when(positionId){
+//            SENSOR_LEFT_1 ->{
+//                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
+//                sensorValueLeft1TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_LEFT_2 ->{
+//                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
+//                sensorValueLeft2TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_RIGHT_1 ->{
+//                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
+//                sensorValueRight1TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_RIGHT_2 ->{
+//                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
+//                sensorValueRight2TextView.text = sensorValue.toString()
+//            }
+//        }
+//    }
+//
+//    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
+//        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+//        val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+//        val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
+//        playFootSound(footSoundPool, audioAttributes, soundId)
+//        when(deviceName){
+//            DEVICE_NAME_LEFT -> {
+//                val notifyLeftFootOnTheGroundView =
+//                findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
+//                notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+//                Handler(Looper.getMainLooper()).postDelayed({
+//                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+//                }, 500L)
+//            }
+//            DEVICE_NAME_RIGHT -> {
+//                val notifyRightFootOnTheGroundView =
+//                    findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
+//                notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+//                Handler(Looper.getMainLooper()).postDelayed({
+//                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+//                }, 500L)
+//            }
+//            else -> {
+//                Log.e("debug", "Invalid device name: $deviceName")
+//            }
+//        }
+//    }
+//
+//    fun playFootSound(footSoundPool: SoundPool, audioAttributes: AudioAttributes, soundId: Int){
+//        footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
+//            Log.d("debug", "sound should be played")
+//            val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
+//            Handler(Looper.getMainLooper()).postDelayed({
+//                soundPool.stop(streamId)
+//                soundPool.release()
+//            }, 500L)
+//        }
+//    }
+//
+//    /* デバイスのスキャンを行う */
+//    private fun startBleConnection(
+//        bluetoothAdapter: BluetoothAdapter,
+//        deviceName: String
+//    ): BleConnectionRunnable {
+//        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
+//        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
+//        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+//        val bluetoothConnectionThread = Thread(bleConnectionRunnable)
+//        bluetoothConnectionThread.start()
+//        return bleConnectionRunnable
+//    }
+//}
 
 class BleConnectionRunnable(
      private val bluetoothAdapter: BluetoothAdapter,
@@ -294,7 +294,7 @@ class BleConnectionRunnable(
     }
 }
 
-open class LeScanCallback(private val context: BluetoothConnectionActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
+open class LeScanCallback(private val context: PlayMusicActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
 
     private var hasAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
@@ -332,7 +332,7 @@ open class LeScanCallback(private val context: BluetoothConnectionActivity, priv
 }
 
 // デバイスの接続と切断を管理するコールバック関数
-class GattCallback(private val context: BluetoothConnectionActivity, private val sensorValueHandler: SensorValueHandler) : BluetoothGattCallback() {
+class GattCallback(private val context: PlayMusicActivity, private val sensorValueHandler: SensorValueHandler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
     private var connectionTimedOut = false
     override fun onConnectionStateChange(
