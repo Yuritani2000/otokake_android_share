@@ -31,7 +31,8 @@ class PlayMusicActivity : AppCompatActivity() {
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    private val musicId: Int = 12237 //保存したときに確認したIDの値を入れておく．
+    private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
+    private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
 
     private lateinit var binding: ActivityPlayMusicBinding
 
@@ -48,52 +49,51 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************
         //保存用
-        //val strageMusic = StrageMusic()
+//        val strageMusic = StrageMusic()
 //        strageMusic.StrageInMusic(this)
 
         //↓ID検索用
-/*
-        //projection: 欲しい情報を定義
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-        )
-        //上のprojectionとselectionを利用した問い合わせ変数を作製
-        val cursor = contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, //外部ストレージ
-            projection,
-            null,
-            null, // selectionArgs,
-            null
-        )
 
-        lateinit var contentUri: Uri
-        val text: TextView = findViewById(R.id.textView)
+//        //projection: 欲しい情報を定義
+//        val projection = arrayOf(
+//            MediaStore.Audio.Media._ID,
+//        )
+//        //上のprojectionとselectionを利用した問い合わせ変数を作製
+//        val cursor = contentResolver.query(
+//            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, //外部ストレージ
+//            projection,
+//            null,
+//            null, // selectionArgs,
+//            null
+//        )
+//
+//        lateinit var contentUri: Uri
+//        val text: TextView = findViewById(R.id.textView)
+//
+//        cursor?.use{
+//            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+//
+//            while (cursor.moveToNext()) {
+//                val id = cursor.getLong(idColumn)
+//
+//                contentUri = Uri.withAppendedPath(
+//                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+//                    id.toString()
+//                )
+//
+//                //取得したメタデータを確認
+//                Toast.makeText(applicationContext,
+//                    "id: $id, contentUir: $contentUri"
+//                    , Toast.LENGTH_LONG).show()
+//                text.setText("id: $id, contentUir: $contentUri")
+//                /*
+//                Log.d(
+//                    TAG, "id: $id, display_name: $displayName, content_uri: $contentUri"
+//                )
+//                 */
+//            }
+//        }
 
-        cursor?.use{
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-
-                contentUri = Uri.withAppendedPath(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    id.toString()
-                )
-
-                //取得したメタデータを確認
-                Toast.makeText(applicationContext,
-                    "id: $id, contentUir: $contentUri"
-                    , Toast.LENGTH_LONG).show()
-                text.setText("id: $id, contentUir: $contentUri")
-                /*
-                Log.d(
-                    TAG, "id: $id, display_name: $displayName, content_uri: $contentUri"
-                )
-                 */
-            }
-        }
-
- */
         //************************************************************************************
 
         binding.startButton.setOnClickListener { tappedStartButton() }
@@ -275,31 +275,37 @@ class PlayMusicActivity : AppCompatActivity() {
      * こちらも，SensorValueHandlerに渡すためにラムダ式にする．
      */
     private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
-        tappedBluetoothButton()
-        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
-            AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-        val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
-        val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-        playFootSound(footSoundPool, audioAttributes, soundId)
-        when(deviceName){
-            DEVICE_NAME_LEFT -> {
-                val notifyLeftFootOnTheGroundView =
-                    findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
-                notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
-                Handler(Looper.getMainLooper()).postDelayed({
-                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
-                }, 500L)
-            }
-            DEVICE_NAME_RIGHT -> {
-                val notifyRightFootOnTheGroundView =
-                    findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
-                notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
-                Handler(Looper.getMainLooper()).postDelayed({
-                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
-                }, 500L)
-            }
-            else -> {
-                Log.e("debug", "Invalid device name: $deviceName")
+        if(deviceName != previousDeviceName) {
+            previousDeviceName = deviceName
+            tappedBluetoothButton()
+            val audioAttributes =
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
+                    AudioAttributes.CONTENT_TYPE_SONIFICATION
+                ).build()
+            val footSoundPool =
+                SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
+            playFootSound(footSoundPool, audioAttributes, soundId)
+            when (deviceName) {
+                DEVICE_NAME_LEFT -> {
+                    val notifyLeftFootOnTheGroundView =
+                        findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
+                    notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                    }, 500L)
+                }
+                DEVICE_NAME_RIGHT -> {
+                    val notifyRightFootOnTheGroundView =
+                        findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
+                    notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                    }, 500L)
+                }
+                else -> {
+                    Log.e("debug", "Invalid device name: $deviceName")
+                }
             }
         }
     }

@@ -434,10 +434,9 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
                     }
                 }
                 val movingAverage = movingAverageArray.sum() / movingAverageArray.size
-                if(notificationCount >= 5){
                     gap[0] = gap[1]
-                    gap[1] = movingAverage
-                    if(gap[1] < 1024 && (gap[1] - gap[0]) / 5 <= -150 ){
+                    gap[1] = sensorValue1
+                    if(gap[0] >= 3072 && (gap[1] - gap[0]) <= -500 ){
                         Log.d("debug", "gap[0]: ${gap[0]}, gap[1]: ${gap[1]}")
                         val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                         footOnTheGroundMsg.sendToTarget()
@@ -449,8 +448,6 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
                     sensorValue1Msg.sendToTarget()
                     val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
                     sensorValue2Msg.sendToTarget()
-
-                }
                 notificationCount++;
             }
         }else{
