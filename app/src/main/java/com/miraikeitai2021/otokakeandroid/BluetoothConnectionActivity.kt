@@ -409,11 +409,13 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
-    private val gap = arrayOf(0,0)
+    private val gap1 = arrayOf(0,0)
+    private val gap2 = arrayOf(0,0)
     private var notificationCount = 0
 
     // 前後1つずつ，3ms分の移動平均フィルタをとりあえずかける．
-    private var movingAverageArray = arrayOf(0, 0, 0, 0, 0)
+    private var movingAverageArray1 = arrayOf(0, 0, 0, 0, 0)
+    private var movingAverageArray2 = arrayOf(0, 0, 0, 0, 0)
 
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt?,
@@ -426,21 +428,36 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
             characteristic?.let{ it ->
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
-                for(i in movingAverageArray.indices){
-                    if(i == movingAverageArray.size-1){
-                        movingAverageArray[i] = sensorValue1
+                for(i in movingAverageArray1.indices){
+                    if(i == movingAverageArray1.size-1){
+                        movingAverageArray1[i] = sensorValue1
                     }else{
-                        movingAverageArray[i] = movingAverageArray[i + 1]
+                        movingAverageArray1[i] = movingAverageArray1[i + 1]
                     }
                 }
-                val movingAverage = movingAverageArray.sum() / movingAverageArray.size
-                    gap[0] = gap[1]
-                    gap[1] = sensorValue1
-                    if(gap[0] >= 3072 && (gap[1] - gap[0]) <= -500 ){
-                        Log.d("debug", "gap[0]: ${gap[0]}, gap[1]: ${gap[1]}")
-                        val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
-                        footOnTheGroundMsg.sendToTarget()
+                val movingAverage1 = movingAverageArray1.sum() / movingAverageArray1.size
+                gap1[0] = gap1[1]
+                gap1[1] = sensorValue1
+                if(gap1[0] >= 3072 && (gap1[1] - gap1[0]) <= -500 ){
+                    Log.d("debug", "gap[0]: ${gap1[0]}, gap[1]: ${gap1[1]}")
+                    val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
+                    footOnTheGroundMsg.sendToTarget()
+                }
+                for(i in movingAverageArray2.indices){
+                    if(i == movingAverageArray2.size-1){
+                        movingAverageArray2[i] = sensorValue2
+                    }else{
+                        movingAverageArray2[i] = movingAverageArray2[i + 1]
                     }
+                }
+                val movingAverage2 = movingAverageArray2.sum() / movingAverageArray2.size
+                gap2[0] = gap2[1]
+                gap2[1] = sensorValue2
+                if(gap2[1] < 1024 && (gap2[1] - gap2[0]) <= -500 ){
+                    Log.d("debug", "gap[0]: ${gap2[0]}, gap[1]: ${gap2[1]}")
+                    val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
+                    footOnTheGroundMsg.sendToTarget()
+                }
 
                     notificationCount = 0
 
