@@ -46,8 +46,6 @@ class CheckRunBpm {
      * 算出する．
      * 初回の算出時はstartTimeとendTimeの値が同値となる
      */
-    private val stepTimeHistory = arrayOf(0L, 0L, 0L, 0L, 0L, 0L)
-
     fun timeOneStep(): Float {
         val time = System.currentTimeMillis()
         if (endTime == null) {
@@ -59,21 +57,7 @@ class CheckRunBpm {
         }
 
         val timeOneStep = endTime!! - startTime!!
-//        if(stepTimeHistory.sum() == 0L){
-//            stepTimeHistory.forEachIndexed { index, _ ->
-//                stepTimeHistory[index] = timeOneStep
-//            }
-//        }
-//        stepTimeHistory.forEachIndexed { index, _ ->
-//            if(index == stepTimeHistory.lastIndex){
-//                stepTimeHistory[index] = timeOneStep
-//            }else{
-//                stepTimeHistory[index] = stepTimeHistory[index + 1]
-//            }
-//        }
         val reTime = timeOneStep.toFloat()
-//        val reTime = stepTimeHistory.average().toFloat()
-
         return reTime
     }
 }

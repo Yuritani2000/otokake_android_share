@@ -58,16 +58,19 @@ const val SENSOR_RIGHT_2 = 10003
 const val DEVICE_NAME_LEFT = "Otokake_Left"
 const val DEVICE_NAME_RIGHT = "Otokake_Right"
 
+// BLEデバイスとの通信を行うスレッドからメインスレッドへデータを渡す際に使用されるHandler
 open class SensorValueHandler(
     private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit,
     private val handleFootTouchWithTheGround: (deviceName: String) -> Unit
 ): Handler(Looper.getMainLooper()){
     override fun handleMessage(msg: Message) {
         when(msg.what){
+            // 圧力の計測値をメインスレッドに渡す際は，こちらが呼ばれる．
             SENSOR_VALUE_RECEIVE -> {
                 Log.d("debug", "handler called")
                 updateSensorValueTextView(msg.arg1, msg.arg2)
             }
+            // 足が地面と接触した際には，こちらが呼ばれる．
             FOOT_ON_THE_GROUND -> {
                 Log.d("debug", "${msg.obj} on the ground")
                 handleFootTouchWithTheGround(msg.obj.toString())
@@ -123,8 +126,9 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
         result?.let {
             Log.d("debug", "device ${it.device.name} found")
             bluetoothLeScanner.stopScan(this)
-            // 第3引数のBlueotoothGattCallbackが，bluetoothGattを取得しなければ撮ることができない…
+            // 各接続試行につき1回しか呼ばれないようにする．
             if(!hasAlreadyFound) {
+                // デバイスが見つかってからデバイススキャンを停止するまでタイムラグがあるため，その時間を待ってから接続を開始する
                 Handler(Looper.getMainLooper()).postDelayed({
                     bluetoothGatt = it.device.connectGatt(
                         context,
@@ -137,6 +141,7 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
         }
     }
 
+    // メインスレッドからデバイスを手動で切断するときに呼ばれる．
     fun disconnectGatt(){
         if(bluetoothGatt == null){
             Log.e("debug", "bluetoothGatt to disconnect is null")
@@ -150,26 +155,34 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
 class GattCallback(private val context: PlayMusicActivity, private val sensorValueHandler: SensorValueHandler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
     private var connectionTimedOut = false
+
+    // BLEデバイスとの接続状況が変化すると呼ばれるメソッド．
     override fun onConnectionStateChange(
         gatt: BluetoothGatt?,
         status: Int,
         newState: Int
     ) {
+        // 5秒間の間，接続を試行する．5秒経っても接続できない場合，タイムアウトしたことを示すメンバをtrueにして接続試行をやめる．
         Handler(Looper.getMainLooper()).postDelayed({
             connectionTimedOut = true
         }, CONNECTION_PERIOD)
+
         when (newState) {
+            // 接続が確立したときに呼ばれる部分
             BluetoothProfile.STATE_CONNECTED -> {
                 connectionState = STATE_CONNECTED
                 Log.d("debug", "Connected to GATT server.")
                 val isDiscoveringServices = gatt?.discoverServices()
                 Log.d("debug", "Attempting to start service discovery: $isDiscoveringServices")
             }
+
+            // デバイスとの接続が切れた際に呼ばれる部分．
             BluetoothProfile.STATE_DISCONNECTED -> {
                 connectionState = STATE_DISCONNECTED
                 Log.d("debug", "Disconnected from GATT server.")
                 gatt?.close()
                 when(status){
+                    // コードが133(デバイスが見つからない)場合，接続をもう一度試行する動作を5秒間繰り返す．それ以外は，接続をやめる．
                     133 -> {
                         if (!connectionTimedOut){
                             Log.d("debug", "connection failed, retrying...")
@@ -187,6 +200,7 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
+    // 接続後，BLEで使用される「サービス」が受け取ると呼ばれる．今回使うサービスは3つ目のサービスであるため，それを抽出する．
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int){
         when(status){
             BluetoothGatt.GATT_SUCCESS -> {
@@ -201,7 +215,7 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
-    // キャラクタリスティックを受信するとココが呼ばれる？ならばまずはここでデータが撮れているかどうかを見なければ…！
+    // キャラクタリスティックを一番最初に受信するとココが呼ばれる．
     override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
@@ -224,14 +238,10 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
+    // 1つ前に受け取ったセンサの計測値と，今うけとったセンサの計測値を格納するための配列
     private val gap1 = arrayOf(0,0)
-    private val gap2 = arrayOf(0,0)
-    private var notificationCount = 0
 
-    // 前後1つずつ，3ms分の移動平均フィルタをとりあえずかける．
-    private var movingAverageArray1 = arrayOf(0, 0, 0, 0, 0)
-    private var movingAverageArray2 = arrayOf(0, 0, 0, 0, 0)
-
+    // デバイスから定期的にキャラクタリスティックとよばれる通信データが送られてくると呼ばれる関数．
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt?,
         characteristic: BluetoothGattCharacteristic?
@@ -243,44 +253,21 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
             characteristic?.let{ it ->
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
-                for(i in movingAverageArray1.indices){
-                    if(i == movingAverageArray1.size-1){
-                        movingAverageArray1[i] = sensorValue1
-                    }else{
-                        movingAverageArray1[i] = movingAverageArray1[i + 1]
-                    }
-                }
-                val movingAverage1 = movingAverageArray1.sum() / movingAverageArray1.size
+
+                // 配列の要素をずらす．
                 gap1[0] = gap1[1]
                 gap1[1] = sensorValue1
+
+                // 圧力値(低いほど高い)が3072以上，かつ，圧力の減少幅が-500以上であった場合は，足音を鳴らす信号をメインスレッドに送信する．
                 if(gap1[0] >= 3072 && (gap1[1] - gap1[0]) <= -500 ){
                     Log.d("debug", "gap[0]: ${gap1[0]}, gap[1]: ${gap1[1]}")
                     val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                     footOnTheGroundMsg.sendToTarget()
                 }
-                for(i in movingAverageArray2.indices){
-                    if(i == movingAverageArray2.size-1){
-                        movingAverageArray2[i] = sensorValue2
-                    }else{
-                        movingAverageArray2[i] = movingAverageArray2[i + 1]
-                    }
-                }
-                val movingAverage2 = movingAverageArray2.sum() / movingAverageArray2.size
-                gap2[0] = gap2[1]
-                gap2[1] = sensorValue2
-                if(gap2[1] < 1024 && (gap2[1] - gap2[0]) <= -500 ){
-                    Log.d("debug", "gap[0]: ${gap2[0]}, gap[1]: ${gap2[1]}")
-                    val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
-                    footOnTheGroundMsg.sendToTarget()
-                }
-
-                    notificationCount = 0
-
                     val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
                     sensorValue1Msg.sendToTarget()
                     val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
                     sensorValue2Msg.sendToTarget()
-                notificationCount++;
             }
         }else{
             Log.e("debug", "characteristic value format is invalid.")
