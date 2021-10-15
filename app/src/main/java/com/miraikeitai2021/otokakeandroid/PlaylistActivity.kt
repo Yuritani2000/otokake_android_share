@@ -24,9 +24,9 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
         val db1Dao = db1.PlaylistDao()  //Daoと接続
-        val db2 = MiddlelistDatabase.getInstance(this)
-        val db2Dao = db2.MiddlelistDao()
-        val adapter = RecyclerListAdapter(playlists,db1Dao,db2Dao)
+        val db3 = MiddlelistDatabase.getInstance(this)
+        val db3Dao = db3.MiddlelistDao()
+        val adapter = RecyclerListAdapter(playlists,db1Dao,db3Dao)
 
         //db1Dao.deleteAll()
 
@@ -123,17 +123,15 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         }
     }
 
-    private inner class RecyclerListAdapter(private val _listData: MutableList<MutableMap<String, Any>>, private val db1Dao: PlaylistDao, private val db2Dao: MiddlelistDao):
+    private inner class RecyclerListAdapter(private val _listData: MutableList<MutableMap<String, Any>>, private val db1Dao: PlaylistDao, private val db3Dao: MiddlelistDao):
         RecyclerView.Adapter<RecyclerListViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerListViewHolder {
             //レイアウトインフレータを取得
             val inflater = LayoutInflater.from(this@PlaylistActivity)
             //row.xmlをインフレ―トし、1行分の画面部品とする
             val view = inflater.inflate(R.layout.playlist_row, parent, false)
-
             //ビューホルダオブジェクトを生成
             val holder = RecyclerListViewHolder(view)
-
             //生成したビューホルダをリターン
             return holder
         }
@@ -147,25 +145,28 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
             //ビューホルダ中のTextViewに設定
             holder._listNameRow.text = listTitle
 
+            //削除ボタンクリック時
             holder._deleteButtonRow.setOnClickListener {
                 val listMap = playlists[position]
                 val id = listMap["id"] as Int
                 val listName = listMap["listName"] as String
                 val deleteList = Playlist(id ,listName)
                 db1Dao.delete(deleteList)
-                db2Dao.deletePlaylist(id)
+                db3Dao.deletePlaylist(id)
                 Log.v("TAG","test delete ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
                 _listData.removeAt(position)
                 this.notifyDataSetChanged()
             }
 
+            //再生リストクリック時
             holder._listNameRow.setOnClickListener {
                 val listMap = playlists[position]
                 val listId = listMap["id"] as Int
                 val id = listId.toString()
                 Toast.makeText(this@PlaylistActivity, id, Toast.LENGTH_SHORT).show()
 
-                val intent2MenuThanks = Intent(this@PlaylistActivity, Musiclist::class.java)
+                val intent2MenuThanks = Intent(this@PlaylistActivity, PlaylistPlayActivity::class.java)
+                intent2MenuThanks.putExtra("playlist_id",id)
                 startActivity(intent2MenuThanks)
             }
 

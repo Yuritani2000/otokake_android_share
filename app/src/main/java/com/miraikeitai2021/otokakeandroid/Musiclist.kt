@@ -23,6 +23,7 @@ class Musiclist : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_musiclist)
 
+        /*
         db2 = MusicDatabase.getInstance(this)   //MusicのDBでも同じ操作してる
         val db2Dao = db2.MusicDao()
         Log.v("TAG","test insert ${db2Dao.getAll().toString()}")
@@ -127,5 +128,8 @@ fun playNext(db2Dao: MusicDao,mediaPlayer: MediaPlayer,context: Context,i: Int,l
             mediaPlayer.start() //再生開始
             playNext(db2Dao, mediaPlayer, context, i+1, list)   //再帰で次の曲の再生へ
         }
+
+         */
     }
+
 }

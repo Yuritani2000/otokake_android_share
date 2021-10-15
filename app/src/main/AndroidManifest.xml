@@ -12,6 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
+            android:name=".PlaylistPlayActivity"
+            android:exported="false" >
+        </activity>
+        <activity
+            android:name=".PlaylistEditActivity"
+            android:exported="true">
+        </activity>
+        <activity
             android:name=".PlaylistActivity"
             android:exported="true">
             <intent-filter>
@@ -22,12 +30,10 @@
         </activity>
         <activity
             android:name=".Musiclist"
-            android:exported="true" >
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true" />
     </application>
 
 </manifest>
