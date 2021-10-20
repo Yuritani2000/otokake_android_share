@@ -163,7 +163,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
                 val listMap = playlists[position]
                 val listId = listMap["id"] as Int
                 val id = listId.toString()
-                Toast.makeText(this@PlaylistActivity, id, Toast.LENGTH_SHORT).show()
 
                 val intent2MenuThanks = Intent(this@PlaylistActivity, PlaylistPlayActivity::class.java)
                 intent2MenuThanks.putExtra("playlist_id",id)

@@ -35,31 +35,6 @@ class PlaylistEditActivity : AppCompatActivity() {
         //インテント元からプレイリスト番号を取得
         val playlistId :Int?= intent.getStringExtra("playlist_id")?.toIntOrNull()
 
-        //デフォルト音楽の登録
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST
-        )
-        val cursor = this.contentResolver.query(
-            MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
-            projection,
-            null, null, null
-        )
-        cursor?.use {
-            val id_index = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
-            val title_index = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
-            val arttist_index = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
-
-            while (cursor.moveToNext()) {
-                var storage_id = cursor.getLong(id_index)
-                var title = cursor.getString(title_index)
-                var artist = cursor.getString(arttist_index)
-
-                db2Dao.insertMusic(storage_id,title,artist)
-
-            }
-        }
         val musicDataList = db2Dao.getAll()
 
         // RecyclerViewの取得
@@ -75,6 +50,44 @@ class PlaylistEditActivity : AppCompatActivity() {
             val intent2MenuThanks = Intent(this@PlaylistEditActivity, PlaylistPlayActivity::class.java)
             intent2MenuThanks.putExtra("playlist_id",intent.getStringExtra("playlist_id"))  //インテント先へ再生リスト番号を渡す
             startActivity(intent2MenuThanks)
+        }
+
+        //読み込みボタンクリック時
+        val inputButton = findViewById<Button>(R.id.input)
+        inputButton.setOnClickListener {
+            //デフォルト音楽の登録
+            val projection = arrayOf(
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST
+            )
+            val cursor = this.contentResolver.query(
+                MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
+                projection,
+                null, null, null
+            )
+            cursor?.use {
+                val id_index = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+                val title_index = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
+                val arttist_index = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+
+                while (cursor.moveToNext()) {
+                    var storage_id = cursor.getLong(id_index)
+                    var title = cursor.getString(title_index)
+                    var artist = cursor.getString(arttist_index)
+
+                    db2Dao.insertMusic(storage_id,title,artist)
+
+                }
+            }
+            val musicDataList = db2Dao.getAll()
+
+            // RecyclerViewの取得
+            val recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
+            // LayoutManagerの設定
+            recyclerView2.layoutManager = LinearLayoutManager(this)
+            // CustomAdapterの生成と設定
+            recyclerView2.adapter=RecyclerListAdapter(musicDataList, db2Dao, db3Dao,playlistId)
         }
     }
 

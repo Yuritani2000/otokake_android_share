@@ -53,8 +53,8 @@ interface MusicDao{
     fun insertMusic(a: Long,b: String,c: String)
 
     //タイトルからストレージIDを取得
-    @Query("SELECT storage_id FROM Music WHERE title = :Title")
-    fun getId(Title: String): Long
+    @Query("SELECT storage_id FROM Music WHERE backend_id = :backendnum")
+    fun getId(backendnum: Int?): Long
 
     //再生リストに登録された曲の取得
     @Query("SELECT * FROM Music WHERE backend_id = :backendnum")
@@ -94,10 +94,14 @@ interface MiddlelistDao{
     fun deleteMusic(playlistnum: Int?,backendnum: Int)
 
     //該当の再生リストのデータを出力
-    @Query("SELECT * FROM Middlelist WHERE middle_playlist_id = :playlistnum")
+    @Query("SELECT * FROM Middlelist WHERE middle_playlist_id = :playlistnum ORDER BY middle_backend_id ASC")
     fun getResisteredMusic(playlistnum: Int?): List<Middlelist>
 
     //再生リストの登録件数の取得
     @Query("SELECT COUNT (middle_playlist_id = :playlistnum) FROM Middlelist")
     fun count(playlistnum: Int?): Int
+
+    //タップした曲以降のデータを出力
+    @Query("SELECT middle_backend_id FROM Middlelist WHERE middle_backend_id >= :backendnum ORDER BY middle_backend_id ASC")
+    fun tap(backendnum: Int): Array<Int>
 }

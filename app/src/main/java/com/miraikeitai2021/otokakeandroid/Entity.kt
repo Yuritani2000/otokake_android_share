@@ -23,7 +23,6 @@ data class Music(
     val url: String?         //URL(NULL許容)
 )
 
-
 //中間テーブルのEntity
 @Entity
 data class Middlelist(

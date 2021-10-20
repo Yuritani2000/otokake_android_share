@@ -93,8 +93,13 @@ class PlaylistPlayActivity : AppCompatActivity() {
             holder.musicTitle.text = musicTitle
 
             //曲クリック時の処理
-            holder.itemView.setOnClickListener {
-                Toast.makeText(applicationContext, "実装中だよ！", Toast.LENGTH_LONG).show()
+            holder.musicTitle.setOnClickListener {
+                val data = item.backend_id.toString()   //タップした曲以降のリストを取得
+                Log.v("TAG","data:${data}")
+
+                val intent2MenuThanks = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
+                intent2MenuThanks.putExtra("data",data)
+                startActivity(intent2MenuThanks)
             }
 
         }

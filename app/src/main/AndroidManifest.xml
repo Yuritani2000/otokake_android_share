@@ -12,13 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
+            android:name=".PlayMusicActivity"
+            android:exported="false" />
+        <activity
             android:name=".PlaylistPlayActivity"
-            android:exported="false" >
-        </activity>
+            android:exported="false" />
         <activity
             android:name=".PlaylistEditActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".PlaylistActivity"
             android:exported="true">
