@@ -18,6 +18,7 @@ class CheckRunBpm {
         if(timeOneStep <= 0.0f){ //結果が0ms以下の時は加工前の曲のbpmを返す．
             runBpm = checkMusicBpm.checkMusicBpm(context, id)
         }else{
+            // (BPM) = 60(秒) / 一歩当たりの時間間隔(秒))
             runBpm = 60.0f * (1000.0f / timeOneStep)
         }
 
