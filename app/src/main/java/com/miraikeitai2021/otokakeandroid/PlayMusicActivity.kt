@@ -315,7 +315,7 @@ class PlayMusicActivity : AppCompatActivity() {
     /**
      * 足と地面が接したときに足音の再生を行う．
      */
-    fun playFootSound(footSoundPool: SoundPool, soundId: Int){
+    private fun playFootSound(footSoundPool: SoundPool, soundId: Int){
         footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
             Log.d("debug", "sound should be played")
             val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
