@@ -181,7 +181,7 @@ class PlayMusicActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun tappedBluetoothButton(){
         //歩調のBpmによって曲の再生速度を変更する
-        playMusic.chengeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
+        playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
 
         val text: TextView = findViewById(R.id.textView)
         text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
