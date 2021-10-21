@@ -114,7 +114,7 @@ class BleConnectionRunnable(
 
 open class LeScanCallback(private val context: PlayMusicActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
 
-    private var hasAlreadyFound = false
+    private var isAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
 
     override fun onScanFailed(errorCode: Int) {
@@ -127,7 +127,7 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
             Log.d("debug", "device ${it.device.name} found")
             bluetoothLeScanner.stopScan(this)
             // 各接続試行につき1回しか呼ばれないようにする．
-            if(!hasAlreadyFound) {
+            if(!isAlreadyFound) {
                 // デバイスが見つかってからデバイススキャンを停止するまでタイムラグがあるため，その時間を待ってから接続を開始する
                 Handler(Looper.getMainLooper()).postDelayed({
                     bluetoothGatt = it.device.connectGatt(
@@ -136,7 +136,7 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
                         GattCallback(context, sensorValueHandler)
                     )
                 }, CONNECTION_INTERVAL)
-                hasAlreadyFound = true
+                isAlreadyFound = true
             }
         }
     }
