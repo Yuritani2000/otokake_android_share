@@ -186,7 +186,7 @@ class PlayMusicActivity : AppCompatActivity() {
         val text: TextView = findViewById(R.id.textView)
         text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
                 "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                "musicSpeed: ${playMusic.getChengedMusicSpeed()}  ")
+                "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
     }
 
     /**

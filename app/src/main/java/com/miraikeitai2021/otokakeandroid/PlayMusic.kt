@@ -110,7 +110,7 @@ class PlayMusic(context: Context) {
      * テスト用
      * chengedMusicSpeedの値取得
      */
-    fun getChengedMusicSpeed(): Float{
+    fun getChangedMusicSpeed(): Float{
         return changedMusicSpeed
     }
 
