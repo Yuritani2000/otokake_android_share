@@ -155,17 +155,6 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-    * スタートボタンとストップボタン兼用のボタンのリスナー
-    * */
-    private fun onClickStartAndStopButton(){
-        if(playMusic.isPlaying()){
-            tappedStartButton()
-        }else{
-            tappedStartButton()
-        }
-    }
-
-    /**
      * スタートボタンがクリックされたときの処理
      */
     private fun tappedStartButton(){
