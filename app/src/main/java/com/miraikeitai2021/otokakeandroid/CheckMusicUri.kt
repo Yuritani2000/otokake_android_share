@@ -48,16 +48,6 @@ class CheckMusicUri {
             }
         }
 
-        /**
-         * テスト用．
-         * でも，MediaStore.Audio.Media.EXTERNAL_CONTENT_URIの値が固定で，
-         * IDによって変わるだけだから，結局これでもいいのでは？
-         */
-        contentUri = Uri.withAppendedPath(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            id.toString()
-        )
-
         return contentUri
     }
 }
