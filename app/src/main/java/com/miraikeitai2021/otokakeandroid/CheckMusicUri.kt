@@ -13,7 +13,7 @@ class CheckMusicUri {
      * context: 呼び出し元ActivityのContext
      * id: ストレージにある曲のid
      */
-    fun checkUri(context: Context, id: Int, contentResolver: ContentResolver): Uri {
+    fun checkUri(id: Int, contentResolver: ContentResolver): Uri {
 
         //projection: 欲しい情報を定義
         val projection = arrayOf(

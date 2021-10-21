@@ -160,9 +160,9 @@ class PlayMusicActivity : AppCompatActivity() {
     private fun tappedStartButton(){
         //曲をスタートする
         val text: TextView = findViewById(R.id.textView)
-        val contentUri = checkMusicUri.checkUri(this, musicId, contentResolver)
+        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
         text.setText(contentUri.toString())
-        playMusic.startMusic(checkMusicUri.checkUri(this, musicId, contentResolver))
+        playMusic.startMusic(checkMusicUri.checkUri(musicId, contentResolver))
         //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
