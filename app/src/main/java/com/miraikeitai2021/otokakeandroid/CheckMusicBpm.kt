@@ -26,7 +26,7 @@ class CheckMusicBpm {
         var bpm = "100.0"
         if(id != musicId){
             val mmr = MediaMetadataRetriever()
-            mmr.setDataSource(context, checkMusicUri.checkUri(context, id, context.contentResolver))
+            mmr.setDataSource(context, checkMusicUri.checkUri(id, context.contentResolver))
 
             if(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) != null) {
                 bpm = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)!!.toString()
