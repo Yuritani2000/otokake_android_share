@@ -275,34 +275,47 @@ class PlayMusicActivity : AppCompatActivity() {
      * こちらも，SensorValueHandlerに渡すためにラムダ式にする．
      */
     private val handleFootTouchWithTheGround: (deviceName: String) -> Unit = { deviceName ->
+        // 走るときは左右交互に足が出るため，一つ前に同じ足の接触を検知した際は，動作を行わない
         if(deviceName != previousDeviceName) {
+            // 現在検知された足デバイス名を，前に検知された足デバイス名とする．これで，次に同じデバイスが接触を検知したとしてもキャンセルする．
             previousDeviceName = deviceName
+            // 足が地面についたことを知らせ，曲の速度を変える．
             tappedBluetoothButton()
+
+            // 以下は，足音を鳴らすために必要なオブジェクト群．
+            // 再生するサウンドの種類を指定する
             val audioAttributes =
                 AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
                     AudioAttributes.CONTENT_TYPE_SONIFICATION
                 ).build()
+            // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
             val footSoundPool =
                 SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+            // 再生する足音をres/rawフォルダからもってきて，そのIDを取得．
             val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-            playFootSound(footSoundPool, audioAttributes, soundId)
+            // playSoundメソッドは，上記3つのオブジェクトを
+            playFootSound(footSoundPool, soundId)
+            // 足と地面の接触を検知するデバイスが，左足の物か右足の物かにより，処理を変えうる．
             when (deviceName) {
+                // 左足デバイスだった場合，左足の接触を検知したことを示すViewを変える．
                 DEVICE_NAME_LEFT -> {
                     val notifyLeftFootOnTheGroundView =
                         findViewById<View>(R.id.notify_left_foot_on_the_ground_view)
                     notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
                     Handler(Looper.getMainLooper()).postDelayed({
-                        notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                        notifyLeftFootOnTheGroundView.setBackgroundColor(Color.parseColor("#00000000"))
                     }, 500L)
                 }
+                // 右足デバイスだった場合，右足の接触を検知したことを示すViewを変える．
                 DEVICE_NAME_RIGHT -> {
                     val notifyRightFootOnTheGroundView =
                         findViewById<View>(R.id.notify_right_foot_on_the_ground_view)
                     notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffcccc"))
                     Handler(Looper.getMainLooper()).postDelayed({
-                        notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#ffffff"))
+                        notifyRightFootOnTheGroundView.setBackgroundColor(Color.parseColor("#00000000"))
                     }, 500L)
                 }
+                // どちらでもなかった場合は，エラーログを表示する．
                 else -> {
                     Log.e("debug", "Invalid device name: $deviceName")
                 }
@@ -313,7 +326,7 @@ class PlayMusicActivity : AppCompatActivity() {
     /**
      * 足と地面が接したときに足音の再生を行う．
      */
-    fun playFootSound(footSoundPool: SoundPool, audioAttributes: AudioAttributes, soundId: Int){
+    fun playFootSound(footSoundPool: SoundPool, soundId: Int){
         footSoundPool.setOnLoadCompleteListener { soundPool, i, i2 ->
             Log.d("debug", "sound should be played")
             val streamId = soundPool.play(soundId, 1.0f, 1.0f, 0, 0, 1.0f)
