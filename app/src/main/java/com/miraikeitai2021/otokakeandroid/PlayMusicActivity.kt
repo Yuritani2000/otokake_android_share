@@ -162,7 +162,7 @@ class PlayMusicActivity : AppCompatActivity() {
         val text: TextView = findViewById(R.id.textView)
         val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
         text.setText(contentUri.toString())
-        playMusic.startMusic(checkMusicUri.checkUri(musicId, contentResolver))
+        playMusic.startMusic(contentUri)
         //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
