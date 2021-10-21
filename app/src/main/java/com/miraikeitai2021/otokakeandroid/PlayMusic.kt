@@ -59,13 +59,13 @@ class PlayMusic(context: Context) {
      * 歩調のbpmにより，音楽の再生速度を変えるメソッド
      * runSpeed：歩調のbpm
      */
-    fun changeSpeedMusic(runSpeed: Float, orgMusicSpeed: Float){
+    fun changeSpeedMusic(runBpm: Float, orgMusicBpm: Float){
 
         if(mediaPlayer != null) {
             playBackParams = PlaybackParams()
 
-            if(orgMusicSpeed > 0.0f){
-                changedMusicSpeed = runSpeed / orgMusicSpeed
+            if(orgMusicBpm > 0.0f){
+                changedMusicSpeed = runBpm / orgMusicBpm
             }else{
                 changedMusicSpeed = 0.001f
             }
