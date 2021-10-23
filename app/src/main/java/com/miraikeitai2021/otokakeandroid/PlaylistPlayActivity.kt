@@ -1,23 +1,15 @@
 package com.miraikeitai2021.otokakeandroid
 
-import android.content.Context
 import android.content.Intent
-import android.media.MediaPlayer
-import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class PlaylistPlayActivity : AppCompatActivity() {
 
@@ -94,14 +86,17 @@ class PlaylistPlayActivity : AppCompatActivity() {
 
             //曲クリック時の処理
             holder.musicTitle.setOnClickListener {
-                val data = item.backend_id.toString()   //タップした曲以降のリストを取得
-                Log.v("TAG","data:${data}")
+                val data: Array<Int> = db3Dao.tap(playlist_id,item.backend_id)   //タップした曲以降のバックエンドIDを取得
+                var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
+                for (i in data.indices){    //バックエンドIDの配列からストレージIDの配列を取得
+                    storageIdList += db2Dao.getStorageId(data[i])
+                }
 
-                val intent2MenuThanks = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
-                intent2MenuThanks.putExtra("data",data)
-                startActivity(intent2MenuThanks)
+                //インテント処理
+                val intent = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
+                intent.putExtra("storageIdList",storageIdList)
+                startActivity(intent)
             }
-
         }
         override fun getItemCount(): Int {
             //リストデータ中の件数をリターン

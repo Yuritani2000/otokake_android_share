@@ -6,32 +6,28 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 
 class PlayMusicActivity : AppCompatActivity() {
-
-    companion object {  //Mainスレッドでdatabase操作するとエラーになる
-        //lateinit var db1: PlaylistDatabase
-        lateinit var db2: MusicDatabase
-        //lateinit var db3: MiddlelistDatabase
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play_music)
 
-        db2 = MusicDatabase.getInstance(this)   //MusicのDBでも同じ操作してる
-        val db2Dao = db2.MusicDao()
+        val storageIdList: Array<Long> = intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
 
-        val data = intent.getStringExtra("data")?.toInt()
+        /*
+        for (i in storageIdList.indices){   //受け取り内容の確認
+            Log.v("TAG","要素${i}:${storageIdList[i]}")
+        }
+         */
 
         lateinit var mediaPlayer: MediaPlayer
 
-        mediaPlayer = MediaPlayer.create(this, checkUri(this, db2Dao.getId(data)))  //再生の準備
-        mediaPlayer.isLooping = false
+        //1曲目の再生だけ
+        mediaPlayer = MediaPlayer.create(this, checkUri(this,storageIdList[0]))  //再生の準備
+        mediaPlayer.isLooping = false   //ループ再生OFF
         mediaPlayer.start() //再生開始
-
     }
 }
 
