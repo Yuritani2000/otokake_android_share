@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">OtokakeAndroid</string>
+    <string name="dummy_text">ダミーテキスト</string>
+    <string name="ble_not_supported">この端末でBLE通信はサポートされていません。</string>
+    <string name="bluetooth_enabled">Bluetoothが有効化されました。</string>
+    <string name="bluetooth_not_enabled_warning">Bluetoothが無効の場合アプリを使用することができません。</string>
+    <string name="search_device">デバイスを検索</string>
+    <string name="access_fine_location_denied_warning">位置情報へのアクセスを許可しない場合、この機能を使用できません。</string>
+    <string name="disconnect_device">切断</string>
+    <string name="left_device">左足デバイス</string>
+    <string name="right_device">右足デバイス</string>
+    <string name="sensor_1">センサ1</string>
+    <string name="sensor_2">センサ2</string>
+    <string name="start_button_string">START_MUSIC</string>
+    <string name="stop_button_string">STOP_MUSIC</string>
+    <string name="bluetooth_event_string">BLUETOOTH_EVENT</string>
+    <string name="text_string">NULL</string>
 </resources>
