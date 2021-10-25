@@ -54,7 +54,7 @@ interface MusicDao{
 
     //タイトルからストレージIDを取得
     @Query("SELECT storage_id FROM Music WHERE backend_id = :backendnum")
-    fun getId(backendnum: Int?): Long
+    fun getId(backendnum: Int): Long
 
     //再生リストに登録された曲の取得
     @Query("SELECT * FROM Music WHERE backend_id = :backendnum")
@@ -83,7 +83,7 @@ interface MiddlelistDao{
 
     //getPlaylist(1) でプレイリスト1の曲をリストで返す
     @Query("SELECT middle_backend_id FROM Middlelist WHERE middle_playlist_id = :playlistnum")
-    fun getPlaylist(playlistnum: Int?): List<Int>
+    fun getPlaylist(playlistnum: Int): List<Int>
 
     //deletePlaylist(1) でプレイリスト1の情報を全て削除
     @Query("DELETE FROM Middlelist WHERE middle_playlist_id = :playlistnum")
@@ -91,21 +91,21 @@ interface MiddlelistDao{
 
     //再生リストの1曲登録
     @Query("INSERT INTO Middlelist (middle_playlist_id,middle_backend_id) VALUES (:playlistnum,:backendnum)")
-    fun insertMusic(playlistnum: Int?,backendnum: Int)
+    fun insertMusic(playlistnum: Int,backendnum: Int)
 
     //再生リストの1曲削除
     @Query("DELETE FROM Middlelist WHERE middle_playlist_id = :playlistnum AND middle_backend_id = :backendnum")
-    fun deleteMusic(playlistnum: Int?,backendnum: Int)
+    fun deleteMusic(playlistnum: Int,backendnum: Int)
 
     //該当の再生リストのデータを出力
     @Query("SELECT * FROM Middlelist WHERE middle_playlist_id = :playlistnum ORDER BY middle_backend_id ASC")
-    fun getResisteredMusic(playlistnum: Int?): List<Middlelist>
+    fun getResisteredMusic(playlistnum: Int): List<Middlelist>
 
     //再生リストの登録件数の取得
     @Query("SELECT COUNT (middle_playlist_id = :playlistnum) FROM Middlelist")
-    fun count(playlistnum: Int?): Int
+    fun count(playlistnum: Int): Int
 
     //タップした曲以降のバックエンドIDの配列を出力
     @Query("SELECT middle_backend_id FROM Middlelist WHERE middle_playlist_id = :playlistnum AND middle_backend_id >= :backendnum ORDER BY middle_backend_id ASC")
-    fun tap(playlistnum: Int?,backendnum: Int): Array<Int>
+    fun tap(playlistnum: Int,backendnum: Int): Array<Int>
 }

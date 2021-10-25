@@ -33,9 +33,11 @@
             android:id="@+id/divider"
             android:layout_width="409dp"
             android:layout_height="1dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:background="?android:attr/listDivider"
-            app:layout_constraintTop_toBottomOf="@+id/musicTitle"
-            tools:layout_editor_absoluteX="1dp" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/musicTitle" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>

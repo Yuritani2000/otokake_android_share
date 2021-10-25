@@ -31,7 +31,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         val db3Dao = db3.MiddlelistDao()
 
         //インテント元からプレイリスト番号を取得
-        val playlistId :Int?= intent.getStringExtra("playlist_id")?.toIntOrNull()
+        val playlistId :Int = intent.getIntExtra("playlist_id",0)
 
         val musicDataList = db2Dao.getAll()
 
@@ -45,9 +45,9 @@ class PlaylistEditActivity : AppCompatActivity() {
         //完了ボタンクリック時
         val finishButton = findViewById<Button>(R.id.finishButton)
         finishButton.setOnClickListener {
-            val intent2MenuThanks = Intent(this@PlaylistEditActivity, PlaylistPlayActivity::class.java)
-            intent2MenuThanks.putExtra("playlist_id",intent.getStringExtra("playlist_id"))  //インテント先へ再生リスト番号を渡す
-            startActivity(intent2MenuThanks)
+            val intent = Intent(this@PlaylistEditActivity, PlaylistPlayActivity::class.java)
+            intent.putExtra("playlist_id",intent.getStringExtra("playlist_id"))  //インテント先へ再生リスト番号を渡す
+            startActivity(intent)
         }
 
         //読み込みボタンクリック時
@@ -98,7 +98,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         }
     }
 
-    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, private val db2Dao: MusicDao, private val db3Dao: MiddlelistDao,private val playlist_id: Int?):
+    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, private val db2Dao: MusicDao, private val db3Dao: MiddlelistDao,private val playlist_id: Int):
         RecyclerView.Adapter<PlaylistEditActivity.ViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistEditActivity.ViewHolder {
             //レイアウトインフレータを取得

@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -27,7 +28,7 @@ class PlaylistPlayActivity : AppCompatActivity() {
         val db3 = MiddlelistDatabase.getInstance(this)
         val db3Dao = db3.MiddlelistDao()
 
-        val playlistId :Int?= intent.getStringExtra("playlist_id")?.toIntOrNull()   //インテント元からプレイリスト番号を取得
+        val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
         val musicList = db3Dao.getResisteredMusic(playlistId)   //該当の再生リストの情報を取得
 
         //登録件数0件ならスキップ
@@ -43,27 +44,25 @@ class PlaylistPlayActivity : AppCompatActivity() {
         //戻るボタンクリック時
         val backButton = findViewById<Button>(R.id.backBotton)
         backButton.setOnClickListener {
-            val intent2MenuThanks = Intent(this@PlaylistPlayActivity, PlaylistActivity::class.java)
-            startActivity(intent2MenuThanks)
+            val intent = Intent(this@PlaylistPlayActivity, PlaylistActivity::class.java)
+            startActivity(intent)
         }
 
         //編集ボタンクリック時
         val editButtun = findViewById<Button>(R.id.editButton)
         editButtun.setOnClickListener{
-            val intent2MenuThanks = Intent(this@PlaylistPlayActivity, PlaylistEditActivity::class.java)
-            intent2MenuThanks.putExtra("playlist_id",intent.getStringExtra("playlist_id"))
-            startActivity(intent2MenuThanks)
+            val intent = Intent(this@PlaylistPlayActivity, PlaylistEditActivity::class.java)
+            intent.putExtra("playlist_id",intent.getIntExtra("playlist_id",0))
+            startActivity(intent)
         }
     }
 
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view){
-        val musicTitle: TextView
-        init{
-            musicTitle = view.findViewById(R.id.musicTitle2)
-        }
+        val musicTitle = view.findViewById<TextView>(R.id.musicTitle2)
+        val constraintLayout = view.findViewById<ConstraintLayout>(R.id.constraintLayout)
     }
 
-    private inner class RecyclerListAdapter(private val musicList: List<Middlelist>, private val db2Dao: MusicDao, private val db3Dao: MiddlelistDao,private val playlist_id: Int?):
+    private inner class RecyclerListAdapter(private val musicList: List<Middlelist>, private val db2Dao: MusicDao, private val db3Dao: MiddlelistDao,private val playlist_id: Int):
         RecyclerView.Adapter<PlaylistPlayActivity.ViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistPlayActivity.ViewHolder {
             //レイアウトインフレータを取得
@@ -85,7 +84,7 @@ class PlaylistPlayActivity : AppCompatActivity() {
             holder.musicTitle.text = musicTitle
 
             //曲クリック時の処理
-            holder.musicTitle.setOnClickListener {
+            holder.constraintLayout.setOnClickListener {
                 val data: Array<Int> = db3Dao.tap(playlist_id,item.backend_id)   //タップした曲以降のバックエンドIDを取得
                 var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
                 for (i in data.indices){    //バックエンドIDの配列からストレージIDの配列を取得
@@ -93,10 +92,11 @@ class PlaylistPlayActivity : AppCompatActivity() {
                 }
 
                 //インテント処理
-                val intent = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
+                val intent = Intent(this@PlaylistPlayActivity, ExampleActivity::class.java)
                 intent.putExtra("storageIdList",storageIdList)
                 startActivity(intent)
             }
+
         }
         override fun getItemCount(): Int {
             //リストデータ中の件数をリターン

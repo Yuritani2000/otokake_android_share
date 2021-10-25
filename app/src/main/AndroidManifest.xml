@@ -30,7 +30,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Musiclist"
+            android:name=".ExampleActivity"
             android:exported="true" />
         <activity
             android:name=".MainActivity"

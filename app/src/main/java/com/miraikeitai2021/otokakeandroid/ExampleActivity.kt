@@ -8,11 +8,11 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Toast
 
-class PlayMusicActivity : AppCompatActivity() {
+class ExampleActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_play_music)
+        setContentView(R.layout.activity_example)
 
         val storageIdList: Array<Long> = intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
 

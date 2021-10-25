@@ -163,9 +163,9 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
                 val listId = listMap["id"] as Int
                 val id = listId.toString()
 
-                val intent2MenuThanks = Intent(this@PlaylistActivity, PlaylistPlayActivity::class.java)
-                intent2MenuThanks.putExtra("playlist_id",id)
-                startActivity(intent2MenuThanks)
+                val intent = Intent(this@PlaylistActivity, PlaylistPlayActivity::class.java)
+                intent.putExtra("playlist_id",id)
+                startActivity(intent)
             }
 
         }
@@ -181,7 +181,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         var result = true
 
         playlists.forEach{
-            var name = it["listName"]
+            val name = it["listName"]
             if(name == text){
                 result = false
                 return result
