@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
-            android:name=".PlayMusicActivity"
+            android:name=".ExampleActivity"
             android:exported="false" />
         <activity
             android:name=".PlaylistPlayActivity"
@@ -29,9 +29,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ExampleActivity"
-            android:exported="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true" />
