@@ -12,9 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
-            android:name=".PlayMusicActivity"
-            android:exported="false" />
-        <activity
             android:name=".PlaylistPlayActivity"
             android:exported="false" />
         <activity
@@ -32,9 +29,13 @@
         <activity
             android:name=".ExampleActivity"
             android:exported="true" />
+              <activity
+            android:name=".PlayMusicActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+        </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true" />
     </application>
-
 </manifest>
