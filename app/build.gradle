@@ -51,3 +51,13 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.6'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:3.2.0'
 }
+
+//roomデータベース
+apply plugin: 'kotlin-kapt'
+dependencies {
+    def room_version = "2.3.0"
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation("androidx.room:room-ktx:$room_version")
+}
