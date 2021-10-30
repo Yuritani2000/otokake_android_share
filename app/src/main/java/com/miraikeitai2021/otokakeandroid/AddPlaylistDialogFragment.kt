@@ -3,22 +3,20 @@ package com.miraikeitai2021.otokakeandroid
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import java.lang.IllegalStateException
 
 class AddPlaylistDialogFragment : DialogFragment(){
 
-    public interface DialogListener {
+    interface DialogListener {
         fun onDialogPositive(dialog: DialogFragment)
         fun onDialogNegative(dialog: DialogFragment)
-        fun onDialogTextRecieve(dialog: DialogFragment,text: String, db1Dao: PlaylistDao)//Activity側へStringを渡します。
+        fun onDialogTextReceive(dialog: DialogFragment, text: String, db1Dao: PlaylistDao)//Activity側へStringを渡します。
     }
 
-    var listener:DialogListener? = null
+    private var listener:DialogListener? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val db1 = PlaylistDatabase.getInstance(requireContext())  //PlayListのDB作成
@@ -30,19 +28,15 @@ class AddPlaylistDialogFragment : DialogFragment(){
             builder.setView(dialogView)
             builder.setTitle(R.string.dialog_title)
             builder.setMessage(R.string.dialog_msg)
-            //val  editText = EditText(it)
-            //builder.setView(editText)
 
-            builder.setPositiveButton(R.string.dialog_btn_ok){dialog, id ->
+            builder.setPositiveButton(R.string.dialog_btn_ok){ _, _ ->
                 val text = dialogView?.findViewById<EditText>(R.id.dialog_text)?.text//EditTextのテキストを取得
 
                 if (!text.isNullOrEmpty()){//textが空でなければ
-                    Log.v("TAG",text.toString())    //ログに要素を全て出力
-                    listener?.onDialogTextRecieve(this,text.toString(),db1Dao)
+                    listener?.onDialogTextReceive(this,text.toString(),db1Dao)
                 }
             }
-            builder.setNegativeButton(R.string.dialog_btn_ng){dialog, id ->
-                Log.v("TAG","NG")    //ログに要素を全て出力
+            builder.setNegativeButton(R.string.dialog_btn_ng){ _, _ ->
                 listener?.onDialogNegative(this)
 
             }
@@ -59,7 +53,6 @@ class AddPlaylistDialogFragment : DialogFragment(){
         try {
             listener = context as DialogListener
         }catch (e: Exception){
-            Log.e("ERROR","CANNOT FIND LISTENER")
         }
     }
 

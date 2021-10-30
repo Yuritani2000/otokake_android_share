@@ -1,9 +1,9 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.ImageButton
 import android.widget.TextView
@@ -23,11 +23,9 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
         val db1Dao = db1.PlaylistDao()  //Daoと接続
-        val db3 = MiddlelistDatabase.getInstance(this)
-        val db3Dao = db3.MiddlelistDao()
+        val db3 = MiddleListDatabase.getInstance(this)
+        val db3Dao = db3.MiddleListDao()
         val adapter = RecyclerListAdapter(playlists,db1Dao,db3Dao)
-
-        //db1Dao.deleteAll()
 
         getPlaylist(adapter, db1Dao)
 
@@ -49,7 +47,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
     }
 
     private fun getPlaylist(adapter: RecyclerListAdapter, db1Dao: PlaylistDao){
-        if(db1Dao.getAll().size == 0){
+        if(db1Dao.getAll().isEmpty()){
             createPlaylist(db1Dao)
         }
         else{
@@ -64,22 +62,21 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         db1Dao.insert(firstList)
         val list = db1Dao.getId(listName)
         val id = list.playlist_id
-        Log.v("TAG","test insert ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
-        var playList = mutableMapOf<String, Any>("listName" to listName, "id" to id)
+        val playList = mutableMapOf<String, Any>("listName" to listName, "id" to id)
         playlists.add(playList)
     }
 
     //プレイリストをロードする関数
+    @SuppressLint("NotifyDataSetChanged")
     private fun loadPlaylist(adapter: RecyclerListAdapter, db1Dao: PlaylistDao){
         val lists = db1Dao.getAll()
 
         lists.forEach{
-            var listName = it.name
-            var id = it.playlist_id
-            var playlist = mutableMapOf<String, Any>("listName" to listName, "id" to id)
+            val listName = it.name
+            val id = it.playlist_id
+            val playlist = mutableMapOf<String, Any>("listName" to listName, "id" to id)
             playlists.add(playlist)
         }
-        Log.v("TAG","test insert ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
 
         adapter.notifyDataSetChanged()
 
@@ -97,7 +94,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
             android.R.id.home -> {
                 finish()
             }
-            R.id.addPlaylist -> {
+            R.id.add -> {
                 val dialogFragment = AddPlaylistDialogFragment()
                 dialogFragment.show(supportFragmentManager, "AddPlaylistDialogFragment")
             }
@@ -111,30 +108,23 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
     private inner class RecyclerListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
-        var _listNameRow: TextView
+        var listNameRow: TextView = itemView.findViewById(R.id.listTitle)
+        var deleteButtonRow: ImageButton = itemView.findViewById(R.id.deleteListButton)
 
-        var _deleteButtonRow: ImageButton
-
-        init {
-            //引数で渡されたリスト1行分の画面部品から表示に使われるTextViewを取得
-            _listNameRow = itemView.findViewById(R.id.listTitle)
-            _deleteButtonRow = itemView.findViewById(R.id.deleteListButton)
-        }
     }
 
-    private inner class RecyclerListAdapter(private val _listData: MutableList<MutableMap<String, Any>>, private val db1Dao: PlaylistDao, private val db3Dao: MiddlelistDao):
+    private inner class RecyclerListAdapter(private val _listData: MutableList<MutableMap<String, Any>>, private val db1Dao: PlaylistDao, private val db3Dao: MiddleListDao):
         RecyclerView.Adapter<RecyclerListViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerListViewHolder {
             //レイアウトインフレータを取得
             val inflater = LayoutInflater.from(this@PlaylistActivity)
             //row.xmlをインフレ―トし、1行分の画面部品とする
             val view = inflater.inflate(R.layout.playlist_row, parent, false)
-            //ビューホルダオブジェクトを生成
-            val holder = RecyclerListViewHolder(view)
             //生成したビューホルダをリターン
-            return holder
+            return RecyclerListViewHolder(view)
         }
 
+        @SuppressLint("NotifyDataSetChanged")
         override fun onBindViewHolder(holder: RecyclerListViewHolder, position: Int) {
             //リストデータから該当1行分のデータを取得
             val item = _listData[position]
@@ -142,29 +132,27 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
             val listTitle = item["listName"] as String
 
             //ビューホルダ中のTextViewに設定
-            holder._listNameRow.text = listTitle
+            holder.listNameRow.text = listTitle
 
             //削除ボタンクリック時
-            holder._deleteButtonRow.setOnClickListener {
+            holder.deleteButtonRow.setOnClickListener {
                 val listMap = playlists[position]
                 val id = listMap["id"] as Int
                 val listName = listMap["listName"] as String
                 val deleteList = Playlist(id ,listName)
                 db1Dao.delete(deleteList)
                 db3Dao.deletePlaylist(id)
-                Log.v("TAG","test delete ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
                 _listData.removeAt(position)
                 this.notifyDataSetChanged()
             }
 
             //再生リストクリック時
-            holder._listNameRow.setOnClickListener {
+            holder.listNameRow.setOnClickListener {
                 val listMap = playlists[position]
                 val listId = listMap["id"] as Int
-                val id = listId.toString()
 
                 val intent = Intent(this@PlaylistActivity, PlaylistPlayActivity::class.java)
-                intent.putExtra("playlist_id",id)
+                intent.putExtra("playlist_id",listId)
                 startActivity(intent)
             }
 
@@ -192,27 +180,24 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
     }
 
-    override fun onDialogTextRecieve(dialog: DialogFragment, text: String, db1Dao: PlaylistDao) {
+    override fun onDialogTextReceive(dialog: DialogFragment, text: String, db1Dao: PlaylistDao) {
         //値を受け取る
-        Log.v("dialog",text)
 
         val checkResult = checkDuplicateName(text)
 
         if(checkResult) {
-            val listName = text
-            val newList = Playlist(0, listName)
+            val newList = Playlist(0, text)
             db1Dao.insert(newList)
-            val list = db1Dao.getId(listName)
+            val list = db1Dao.getId(text)
             val id = list.playlist_id
-            var playlist = mutableMapOf<String, Any>("listName" to listName, "id" to id)
+            val playlist = mutableMapOf<String, Any>("listName" to text, "id" to id)
             playlists.add(playlist)
-            //adapter.notifyDataSetChanged()
-            Log.v("TAG", "test add ${db1Dao.getAll().toString()}")    //ログに要素を全て出力
         }
         else{
             val msg = getString(R.string.duplicateName_ng)
             Toast.makeText(this@PlaylistActivity, msg, Toast.LENGTH_LONG).show()
         }
+
 
     }
     override fun onDialogPositive(dialog: DialogFragment) {
