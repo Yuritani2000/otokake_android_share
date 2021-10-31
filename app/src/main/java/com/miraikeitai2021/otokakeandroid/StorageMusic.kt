@@ -17,15 +17,15 @@ class StorageMusic {
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      */
     fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int){
-
+        val fileName = "music" + backendId.toString() + ".mp3"
 
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
             //APIレベル28以前の機種の場合の処理
-            storageInMusicLessAPI28(context, inputStream, backendId)
+            storageInMusicLessAPI28(context, inputStream, fileName)
         }else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //APIレベル29以降の機種の場合の処理
-            storageInMusicMoreAPI29(context, inputStream)
+            storageInMusicMoreAPI29(context, inputStream, fileName)
         }
     }
 
@@ -36,10 +36,10 @@ class StorageMusic {
      */
     @RequiresApi(Build.VERSION_CODES.Q)
 
-    private fun storageInMusicMoreAPI29(context: Context, inputStream: InputStream){
+    private fun storageInMusicMoreAPI29(context: Context, inputStream: InputStream, fileName:String){
 
         val values= ContentValues().apply {
-            put(MediaStore.Audio.Media.DISPLAY_NAME, "natutanken.mp3") //保存する曲ファイルの名前を入力
+            put(MediaStore.Audio.Media.DISPLAY_NAME, fileName) //保存する曲ファイルの名前を入力
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
 
@@ -52,6 +52,7 @@ class StorageMusic {
         var outputStream: OutputStream? = null
 
         try {
+            //コピー先であるoutputStreamにMediaStoreの情報を格納
             outputStream = destination.let { context.contentResolver.openOutputStream(it) } ?: error("保存メディアファイルを開けない")
             //inputStreamの音楽データをoutputStream(MediaStore)にコピー
             inputStream.copyTo(outputStream)
@@ -77,9 +78,8 @@ class StorageMusic {
      * inputStream: 保存したい音楽データのinputStream
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      */
-    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, backendId: Int){
+    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, fileName: String){
         //文字列パスを作製
-        val fileName = "music" + backendId.toString() + ".mp3"
         val path = context.getExternalFilesDir(Environment.DIRECTORY_MUSIC).toString()
         val file = path + "/" + fileName
 
@@ -100,7 +100,7 @@ class StorageMusic {
         }
 
         val values = ContentValues().apply{
-            put(MediaStore.Audio.Media.DISPLAY_NAME, "tecpoter")
+            put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Audio.Media.MIME_TYPE, "audio/mp3")
             put(MediaStore.Audio.Media.DATA,file)
         }
