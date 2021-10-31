@@ -17,6 +17,8 @@ class StorageMusic {
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      */
     fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int){
+
+
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
             //APIレベル28以前の機種の場合の処理
