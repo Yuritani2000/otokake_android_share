@@ -21,9 +21,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist)
 
-//        //確かめるための画面遷移
-//        val testIntent = Intent(this@PlaylistActivity, PlayMusicActivity::class.java)
-//        startActivity(testIntent)
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
         val db1Dao = db1.PlaylistDao()  //Daoと接続
         val db3 = MiddleListDatabase.getInstance(this)

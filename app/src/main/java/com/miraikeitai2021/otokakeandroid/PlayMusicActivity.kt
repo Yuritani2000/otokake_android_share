@@ -388,7 +388,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
 
     /**
-     * メニューバーを押した時に呼ばれる
+     * メニューバーを押した時に呼ばれるメソッド
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var returnVal = true
@@ -401,12 +401,12 @@ class PlayMusicActivity : AppCompatActivity() {
             }
 
             R.id.boyon -> {
-                nowSetFootsteps = "ボヨン"
+                nowSetFootsteps = "現在の足音：ボヨン"
                 footstepsText.text = nowSetFootsteps
             }
 
             R.id.japanese_drum ->{
-                nowSetFootsteps = "和太鼓"
+                nowSetFootsteps = "現在の足音：和太鼓"
                 footstepsText.text = nowSetFootsteps
             }
 
