@@ -35,11 +35,6 @@ class PlayMusicActivity : AppCompatActivity() {
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
     private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
-    val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
-            AudioAttributes.CONTENT_TYPE_SONIFICATION
-        ).build()
-    // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
-    val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
@@ -287,17 +282,18 @@ class PlayMusicActivity : AppCompatActivity() {
 
             // 以下は，足音を鳴らすために必要なオブジェクト群．
             // 再生するサウンドの種類を指定する
-//            val audioAttributes =
-//                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
-//                    AudioAttributes.CONTENT_TYPE_SONIFICATION
-//                ).build()
-//            // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
-//            val footSoundPool =
-//                SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+            val audioAttributes =
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
+                    AudioAttributes.CONTENT_TYPE_SONIFICATION
+                ).build()
+            // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
+            val footSoundPool =
+                SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
             // 再生する足音をres/rawフォルダからもってきて，そのIDを取得．
 //            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
 //            // playSoundメソッドは，上記3つのオブジェクトを
-            val soundId = footSoundMap[nowSetFootsteps] as Int
+            val sound = footSoundMap[nowSetFootsteps] as Int
+            val soundId = footSoundPool.load(this, sound, 1)
             playFootSound(footSoundPool, soundId)
             // 足と地面の接触を検知するデバイスが，左足の物か右足の物かにより，処理を変えうる．
             when (deviceName) {
@@ -369,12 +365,9 @@ class PlayMusicActivity : AppCompatActivity() {
      * 足音のファイルをロードして得られるIDと足音の名前を対応付けるMapを作成する
      */
     private fun onCreateFootstepsMap(){
-        val sound1 = footSoundPool.load(this, R.raw.test_boyon, 1)
-        val sound2 = footSoundPool.load(this, R.raw.test_japanese_drum, 1)
-
         this.footSoundMap = mutableMapOf<String, Any>(
-            "ボヨン" to sound1,
-            "和太鼓" to sound2
+            "ボヨン" to R.raw.test_boyon,
+            "和太鼓" to R.raw.test_japanese_drum
         )
     }
 
@@ -401,12 +394,12 @@ class PlayMusicActivity : AppCompatActivity() {
             }
 
             R.id.boyon -> {
-                nowSetFootsteps = "現在の足音：ボヨン"
+                nowSetFootsteps = "ボヨン"
                 footstepsText.text = nowSetFootsteps
             }
 
             R.id.japanese_drum ->{
-                nowSetFootsteps = "現在の足音：和太鼓"
+                nowSetFootsteps = "和太鼓"
                 footstepsText.text = nowSetFootsteps
             }
 
