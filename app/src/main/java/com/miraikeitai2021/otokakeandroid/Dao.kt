@@ -28,6 +28,11 @@ interface PlaylistDao {
     //削除
     @Delete
     fun delete(user : Playlist)
+
+    //playlist名の取得
+    @Query("SELECT name FROM Playlist WHERE playlist_id = :playlist")
+    fun getTitle(playlist: Int): String
+
 }
 
 //MusicのDao
@@ -53,59 +58,61 @@ interface MusicDao{
     fun insertMusic(a: Long,b: String,c: String)
 
     //タイトルからストレージIDを取得
-    @Query("SELECT storage_id FROM Music WHERE backend_id = :backendnum")
-    fun getId(backendnum: Int): Long
+    @Query("SELECT storage_id FROM Music WHERE backend_id = :backend")
+    fun getId(backend: Int): Long
 
     //再生リストに登録された曲の取得
-    @Query("SELECT * FROM Music WHERE backend_id = :backendnum")
-    fun getMusic(backendnum: Int): Music
+    @Query("SELECT * FROM Music WHERE backend_id = :backend")
+    fun getMusic(backend: Int): Music
 
     //バックエンドIDからストレージIDを出力する
-    @Query("SELECT storage_id FROM music WHERE backend_id = :backendnum")
-    fun getStorageId(backendnum: Int): Long
+    @Query("SELECT storage_id FROM music WHERE backend_id = :backend")
+    fun getStorageId(backend: Int): Long
+
+
 }
 
 
 //中間テーブルのDao
 @Dao
-interface MiddlelistDao{
+interface MiddleListDao{
     //全要素取得
-    @Query("SELECT * FROM Middlelist")
-    fun getAll(): List<Middlelist>
+    @Query("SELECT * FROM MiddleList")
+    fun getAll(): List<MiddleList>
 
     //追加
     @Insert
-    fun insert(user : Middlelist)
+    fun insert(user : MiddleList)
 
     //更新
     @Update
-    fun update(user : Middlelist)
+    fun update(user : MiddleList)
 
     //getPlaylist(1) でプレイリスト1の曲をリストで返す
-    @Query("SELECT middle_backend_id FROM Middlelist WHERE middle_playlist_id = :playlistnum")
-    fun getPlaylist(playlistnum: Int): List<Int>
+    @Query("SELECT middle_backend_id FROM MiddleList WHERE middle_playlist_id = :playlist")
+    fun getPlaylist(playlist: Int): List<Int>
 
     //deletePlaylist(1) でプレイリスト1の情報を全て削除
-    @Query("DELETE FROM Middlelist WHERE middle_playlist_id = :playlistnum")
-    fun deletePlaylist(playlistnum: Int)
+    @Query("DELETE FROM MiddleList WHERE middle_playlist_id = :playlist")
+    fun deletePlaylist(playlist: Int)
 
     //再生リストの1曲登録
-    @Query("INSERT INTO Middlelist (middle_playlist_id,middle_backend_id) VALUES (:playlistnum,:backendnum)")
-    fun insertMusic(playlistnum: Int,backendnum: Int)
+    @Query("INSERT INTO MiddleList (middle_playlist_id,middle_backend_id) VALUES (:playlist,:backend)")
+    fun insertMusic(playlist: Int,backend: Int)
 
     //再生リストの1曲削除
-    @Query("DELETE FROM Middlelist WHERE middle_playlist_id = :playlistnum AND middle_backend_id = :backendnum")
-    fun deleteMusic(playlistnum: Int,backendnum: Int)
+    @Query("DELETE FROM MiddleList WHERE middle_playlist_id = :playlist AND middle_backend_id = :backend")
+    fun deleteMusic(playlist: Int,backend: Int)
 
     //該当の再生リストのデータを出力
-    @Query("SELECT * FROM Middlelist WHERE middle_playlist_id = :playlistnum ORDER BY middle_backend_id ASC")
-    fun getResisteredMusic(playlistnum: Int): List<Middlelist>
+    @Query("SELECT * FROM MiddleList WHERE middle_playlist_id = :playlist ORDER BY middle_backend_id ASC")
+    fun getRegisteredMusic(playlist: Int): List<MiddleList>
 
     //再生リストの登録件数の取得
-    @Query("SELECT COUNT (middle_playlist_id = :playlistnum) FROM Middlelist")
-    fun count(playlistnum: Int): Int
+    @Query("SELECT COUNT (middle_playlist_id = :playlist) FROM MiddleList")
+    fun count(playlist: Int): Int
 
     //タップした曲以降のバックエンドIDの配列を出力
-    @Query("SELECT middle_backend_id FROM Middlelist WHERE middle_playlist_id = :playlistnum AND middle_backend_id >= :backendnum ORDER BY middle_backend_id ASC")
-    fun tap(playlistnum: Int,backendnum: Int): Array<Int>
+    @Query("SELECT middle_backend_id FROM MiddleList WHERE middle_playlist_id = :playlist AND middle_backend_id >= :backend ORDER BY middle_backend_id ASC")
+    fun tap(playlist: Int,backend: Int): Array<Int>
 }

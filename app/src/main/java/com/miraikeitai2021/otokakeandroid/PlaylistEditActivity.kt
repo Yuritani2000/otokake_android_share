@@ -1,56 +1,51 @@
 package com.miraikeitai2021.otokakeandroid
 
-import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class PlaylistEditActivity : AppCompatActivity() {
 
-    companion object {  //Mainスレッドでdatabase操作するとエラーになる
-        //lateinit var db1: PlaylistDatabase
-        lateinit var db2: MusicDatabase
-        lateinit var db3: MiddlelistDatabase
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist_edit)
 
+        val db1 = PlaylistDatabase.getInstance(this)
+        val db1Dao = db1.PlaylistDao()
         val db2 = MusicDatabase.getInstance(this)    //PlayListのDB作成
         val db2Dao = db2.MusicDao()  //Daoと接続
-        val db3 = MiddlelistDatabase.getInstance(this)
-        val db3Dao = db3.MiddlelistDao()
+        val db3 = MiddleListDatabase.getInstance(this)
+        val db3Dao = db3.MiddleListDao()
 
-        //インテント元からプレイリスト番号を取得
-        val playlistId :Int = intent.getIntExtra("playlist_id",0)
 
-        val musicDataList = db2Dao.getAll()
+        val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
+        supportActionBar?.title = db1Dao.getTitle(playlistId) //ツールバーのタイトルを変更
+
+        var musicDataList = db2Dao.getAll() //データベースの全曲取得
+
+        val defaultList = db3Dao.getPlaylist(playlistId)   //もともと登録されてる曲一覧を取得
 
         // RecyclerViewの取得
-        val recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
+        var recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
         // LayoutManagerの設定
         recyclerView2.layoutManager = LinearLayoutManager(this)
         // CustomAdapterの生成と設定
-        recyclerView2.adapter=RecyclerListAdapter(musicDataList, db2Dao, db3Dao,playlistId)
+        recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
 
-        //完了ボタンクリック時
-        val finishButton = findViewById<Button>(R.id.finishButton)
-        finishButton.setOnClickListener {
-            val intent = Intent(this@PlaylistEditActivity, PlaylistPlayActivity::class.java)
-            intent.putExtra("playlist_id",intent.getStringExtra("playlist_id"))  //インテント先へ再生リスト番号を渡す
-            startActivity(intent)
-        }
+        //戻るボタンの表示
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        //読み込みボタンクリック時
+        //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input)
         inputButton.setOnClickListener {
             //デフォルト音楽の登録
@@ -65,50 +60,56 @@ class PlaylistEditActivity : AppCompatActivity() {
                 null, null, null
             )
             cursor?.use {
-                val id_index = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
-                val title_index = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
-                val arttist_index = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+                val idIndex = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+                val titleIndex = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
+                val artistIndex = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
 
                 while (cursor.moveToNext()) {
-                    var storage_id = cursor.getLong(id_index)
-                    var title = cursor.getString(title_index)
-                    var artist = cursor.getString(arttist_index)
+                    val storageId = cursor.getLong(idIndex)
+                    val title = cursor.getString(titleIndex)
+                    val artist = cursor.getString(artistIndex)
 
-                    db2Dao.insertMusic(storage_id,title,artist)
+                    db2Dao.insertMusic(storageId,title,artist)
 
                 }
             }
-            val musicDataList = db2Dao.getAll()
+            musicDataList = db2Dao.getAll()
 
             // RecyclerViewの取得
-            val recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
+            recyclerView2 = findViewById(R.id.RecyclerView2)
             // LayoutManagerの設定
             recyclerView2.layoutManager = LinearLayoutManager(this)
             // CustomAdapterの生成と設定
-            recyclerView2.adapter=RecyclerListAdapter(musicDataList, db2Dao, db3Dao,playlistId)
+            recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
         }
+    }
+
+    //戻るボタンクリック時
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) { //戻るボタンクリック時
+            finish()
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view){
-        val musicTitle:TextView
-        val checkBox:CheckBox
-        init{
-            musicTitle = view.findViewById(R.id.musicTitle)
-            checkBox = view.findViewById(R.id.checkBox)
-        }
+        val musicTitle: TextView = view.findViewById(R.id.musicTitle)
+        val checkBox: CheckBox = view.findViewById(R.id.checkBox)
+        val constraintLayout: ConstraintLayout = view.findViewById(R.id.editContstraintLayout)
     }
 
-    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, private val db2Dao: MusicDao, private val db3Dao: MiddlelistDao,private val playlist_id: Int):
+    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, val defaultList: List<Int>, private val db3Dao: MiddleListDao,private val playlist_id: Int):
         RecyclerView.Adapter<PlaylistEditActivity.ViewHolder>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistEditActivity.ViewHolder {
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int
+        ): PlaylistEditActivity.ViewHolder {
             //レイアウトインフレータを取得
             val inflater = LayoutInflater.from(this@PlaylistEditActivity)
             //row.xmlをインフレ―トし、1行分の画面部品とする
             val view = inflater.inflate(R.layout.playlist_edit_row, parent, false)
-            //ビューホルダオブジェクトを生成
-            val holder = ViewHolder(view)
             //生成したビューホルダをリターン
-            return holder
+            return ViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: PlaylistEditActivity.ViewHolder, position: Int) {
@@ -119,21 +120,29 @@ class PlaylistEditActivity : AppCompatActivity() {
             //ビューホルダ中のTextViewに設定
             holder.musicTitle.text = musicTitle
             //すでに登録されてる曲は最初にチェックをつける
-            val defaultList = db3Dao.getPlaylist(playlist_id)   //もともと登録されてる曲一覧を取得
-            if(defaultList.contains(item.backend_id)){
-                holder.checkBox.isChecked = true
+            holder.checkBox.isChecked = defaultList.contains(item.backend_id)
+
+            //曲タップ時の処理
+            holder.constraintLayout.setOnClickListener {
+                if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
+                    db3Dao.insertMusic(playlist_id,item.backend_id)
+                    holder.checkBox.isChecked = true
+                }
+                else{   //チェック入ってる(削除)時
+                    db3Dao.deleteMusic(playlist_id,item.backend_id)
+                    holder.checkBox.isChecked = false
+                }
             }
 
-            //チェックボックス操作時
-            holder.checkBox.setOnCheckedChangeListener{_,isChecked ->
-                if(isChecked){  //チェックされたら曲を再生リストに登録
+            //チェックボックスタップ時の処理
+            holder.checkBox.setOnClickListener {
+                if(holder.checkBox.isChecked){  //チェック入ってない(登録)時
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                 }
-                else{   //チェック外れたら曲を再生リストから削除
+                else{   //チェック入ってる(削除)時
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
                 }
             }
-
         }
 
         override fun getItemCount(): Int {

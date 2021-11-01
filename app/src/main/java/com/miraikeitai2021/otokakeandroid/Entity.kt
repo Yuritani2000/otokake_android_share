@@ -25,7 +25,7 @@ data class Music(
 
 //中間テーブルのEntity
 @Entity
-data class Middlelist(
+data class MiddleList(
     @PrimaryKey(autoGenerate = true) val id: Int=0,   //主キーに重複しない番号が必要なため，ほんとにただのid
     val middle_playlist_id: Int,    //プレイリスト番号
     val middle_backend_id: Int      //そのプレイリストに含まれてる曲のbackend_id

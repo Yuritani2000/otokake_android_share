@@ -14,7 +14,7 @@
         android:title="@string/tentative_text"/>
 
     <item
-        android:id="@+id/addPlaylist"
+        android:id="@+id/add"
         app:showAsAction="always"
         android:title="@string/tentative_text"
         android:icon="@drawable/add_icon"/>

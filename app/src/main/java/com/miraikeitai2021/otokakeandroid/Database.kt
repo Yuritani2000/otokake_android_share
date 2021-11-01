@@ -58,21 +58,21 @@ abstract class MusicDatabase : RoomDatabase(){
 }
 
 //MiddleListデータベースの実装
-@Database(entities = arrayOf(Middlelist::class),version = 1,exportSchema = false)
-abstract class MiddlelistDatabase : RoomDatabase(){
-    abstract fun MiddlelistDao(): MiddlelistDao
+@Database(entities = [MiddleList::class],version = 1,exportSchema = false)
+abstract class MiddleListDatabase : RoomDatabase(){
+    abstract fun MiddleListDao(): MiddleListDao
 
     companion object {
 
-        private var INSTANCE: MiddlelistDatabase? = null
+        private var INSTANCE: MiddleListDatabase? = null
 
         private val lock = Any()
 
-        fun getInstance(context: Context): MiddlelistDatabase {
+        fun getInstance(context: Context): MiddleListDatabase {
             synchronized(lock) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.applicationContext,
-                        MiddlelistDatabase::class.java, "MiddlelistDatabase")
+                        MiddleListDatabase::class.java, "MiddleListDatabase")
                         .allowMainThreadQueries()
                         .build()
                 }
