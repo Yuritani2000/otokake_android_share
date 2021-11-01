@@ -12,11 +12,11 @@ import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonTransformingSerializer
 
 /**
@@ -39,27 +39,40 @@ class GetMusicListActivity : AppCompatActivity() {
 
 @Serializable
 data class MusicList(
+    @Serializable(with = MusicListSerializer::class)
     val musicList: List<MusicInfo>
 )
 
 @Serializable
+@SerialName("MusicInfo")
 data class MusicInfo(
-    @SerialName("musicId")val musicId: Int?,
+    @SerialName("musicID")val musicID: Int?,
     @SerialName("musicName")val musicName: String?,
     @SerialName("musicArtist")val musicArtist: String?,
     @SerialName("musicURL")val musicURL: String?
 )
 
+object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSerializer(MusicInfo.serializer())){
+    override fun transformDeserialize(element: JsonElement): JsonElement =
+        if (element is JsonArray) JsonArray(listOf(element)) else element
+}
+
 
 class MusicListViewModel(private val musicListRepository: MusicListRepository): ViewModel(){
     fun getMusicList(){
-        var musicListResponse: MusicInfo? = null
+        var musicListResponse: List<MusicInfo>? = null
         viewModelScope.launch(Dispatchers.Main) {
             try {
                 val httpResult = musicListRepository.requestGetMusicList()
                 when(httpResult){
-                    is HttpResult.Success<MusicInfo> -> {
+                    is HttpResult.Success<List<MusicInfo>> -> {
                         musicListResponse = httpResult.data
+                        musicListResponse?.get(0)?.let{
+                            Log.d("debug", "musicID: ${it.musicID}");
+                            Log.d("debug", "musicID: ${it.musicName}");
+                            Log.d("debug", "musicID: ${it.musicArtist}");
+                            Log.d("debug", "musicID: ${it.musicURL}");
+                        }
                     }
                 }
             }catch(e: Exception){
@@ -77,9 +90,9 @@ sealed class HttpResult<out R>{
 class MusicListRepository(){
     private val url = "http://192.168.2.107:8080/getMusicInfoAll"
 
-    suspend fun requestGetMusicList(): HttpResult<MusicInfo> {
+    suspend fun requestGetMusicList(): HttpResult<List<MusicInfo>> {
         var resultStr = "no data"
-        var httpResult: HttpResult<MusicInfo> = HttpResult.Error(Exception("No http request was executed."))
+        var httpResult: HttpResult<List<MusicInfo>> = HttpResult.Error(Exception("No http request was executed."))
 
         withContext(Dispatchers.IO){
             val (_, _, result) = url.httpGet()
@@ -95,8 +108,9 @@ class MusicListRepository(){
                     resultStr = result.value
                     Log.d("debug", "resultStr: $resultStr")
                     try {
-                        val musicList = Json.decodeFromString<MusicList>(resultStr)
+                        val musicList = Json.decodeFromString<List<MusicInfo>>(resultStr)
                         Log.d("debug", "result converted to object: ${musicList}")
+                        httpResult = HttpResult.Success(musicList)
                     }catch(e: Exception){
                         Log.e("debug" , e.toString())
                         httpResult = HttpResult.Error(e)
