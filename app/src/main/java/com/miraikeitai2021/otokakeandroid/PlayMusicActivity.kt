@@ -18,6 +18,8 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -33,6 +35,14 @@ class PlayMusicActivity : AppCompatActivity() {
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
     private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
+    val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
+            AudioAttributes.CONTENT_TYPE_SONIFICATION
+        ).build()
+    // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
+    val footSoundPool = SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+
+    private var nowSetFootsteps = "和太鼓" //現在設定している足音
+    private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
 
     private lateinit var binding: ActivityPlayMusicBinding
 
@@ -46,6 +56,8 @@ class PlayMusicActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPlayMusicBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        onCreateFootstepsMap()
 
         //************************************************************
         //保存用
@@ -152,6 +164,8 @@ class PlayMusicActivity : AppCompatActivity() {
         disconnectRightDeviceButton.setOnClickListener {
             bleConnectionRunnableLeft?.disconnect()
         }
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     /**
@@ -273,16 +287,17 @@ class PlayMusicActivity : AppCompatActivity() {
 
             // 以下は，足音を鳴らすために必要なオブジェクト群．
             // 再生するサウンドの種類を指定する
-            val audioAttributes =
-                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
-                    AudioAttributes.CONTENT_TYPE_SONIFICATION
-                ).build()
-            // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
-            val footSoundPool =
-                SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
+//            val audioAttributes =
+//                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(
+//                    AudioAttributes.CONTENT_TYPE_SONIFICATION
+//                ).build()
+//            // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
+//            val footSoundPool =
+//                SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
             // 再生する足音をres/rawフォルダからもってきて，そのIDを取得．
-            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-            // playSoundメソッドは，上記3つのオブジェクトを
+//            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
+//            // playSoundメソッドは，上記3つのオブジェクトを
+            val soundId = footSoundMap[nowSetFootsteps] as Int
             playFootSound(footSoundPool, soundId)
             // 足と地面の接触を検知するデバイスが，左足の物か右足の物かにより，処理を変えうる．
             when (deviceName) {
@@ -348,5 +363,58 @@ class PlayMusicActivity : AppCompatActivity() {
         super.onPause()
         bleConnectionRunnableLeft?.disconnect()
         bleConnectionRunnableRight?.disconnect()
+    }
+
+    /**
+     * 足音のファイルをロードして得られるIDと足音の名前を対応付けるMapを作成する
+     */
+    private fun onCreateFootstepsMap(){
+        val sound1 = footSoundPool.load(this, R.raw.test_boyon, 1)
+        val sound2 = footSoundPool.load(this, R.raw.test_japanese_drum, 1)
+
+        this.footSoundMap = mutableMapOf<String, Any>(
+            "ボヨン" to sound1,
+            "和太鼓" to sound2
+        )
+    }
+
+    /**
+     * メニューバーを実現するためのメソッド
+     */
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_options_play_music, menu)
+        return true
+    }
+
+
+    /**
+     * メニューバーを押した時に呼ばれる
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        var returnVal = true
+
+        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
+
+        when(item.itemId) {
+            android.R.id.home -> {
+                finish()
+            }
+
+            R.id.boyon -> {
+                nowSetFootsteps = "ボヨン"
+                footstepsText.text = nowSetFootsteps
+            }
+
+            R.id.japanese_drum ->{
+                nowSetFootsteps = "和太鼓"
+                footstepsText.text = nowSetFootsteps
+            }
+
+            else -> {
+                returnVal = super.onOptionsItemSelected(item)
+            }
+        }
+
+        return returnVal
     }
 }

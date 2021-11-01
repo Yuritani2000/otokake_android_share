@@ -158,6 +158,14 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/nowFootsteps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="5dp"
+            android:text="@string/tentative_text"/>
+
+        <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
