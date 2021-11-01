@@ -59,7 +59,7 @@ object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSer
 
 
 class MusicListViewModel(private val musicListRepository: MusicListRepository): ViewModel(){
-    fun getMusicList(){
+    fun getMusicList() {
         var musicListResponse: List<MusicInfo>? = null
         viewModelScope.launch(Dispatchers.Main) {
             try {
