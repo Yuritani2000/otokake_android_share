@@ -89,7 +89,7 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
                             Log.d("debug", "musicID: ${it.musicArtist}");
                             Log.d("debug", "musicID: ${it.musicURL}");
 
-                            if(it.musicID != null && it.musicName != null){
+                            if(it.musicID != null && it.musicName != null && !db2Dao.getBackendId().contains(it.musicID)){
                                 db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
                             }
                             Log.d("debug", "db: ${db2Dao.getAll()}")
