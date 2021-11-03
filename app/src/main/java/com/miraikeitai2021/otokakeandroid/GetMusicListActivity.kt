@@ -37,12 +37,12 @@ class GetMusicListActivity : AppCompatActivity() {
         setContentView(R.layout.activity_get_music_list)
 
         // 曲の一覧を取得するHTTPリクエスト
-        val musicListRepository = MusicListRepository()
-        val musicListViewModel = MusicListViewModel(musicListRepository)
-        musicListViewModel.getMusicList()
+        val musicRepository = MusicRepository()
+        val musicViewModel = MusicViewModel(musicRepository)
+        musicViewModel.getMusicList()
 
         findViewById<Button>(R.id.download_music_button).setOnClickListener {
-            musicListViewModel.downloadMusic()
+            musicViewModel.downloadMusic()
         }
     }
 }
@@ -68,7 +68,7 @@ object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSer
 }
 
 
-class MusicListViewModel(private val musicListRepository: MusicListRepository): ViewModel(){
+class MusicViewModel(private val musicListRepository: MusicRepository): ViewModel(){
     fun getMusicList() {
         var musicListResponse: List<MusicInfo>? = null
         viewModelScope.launch(Dispatchers.Main) {
@@ -82,6 +82,7 @@ class MusicListViewModel(private val musicListRepository: MusicListRepository): 
                             Log.d("debug", "musicID: ${it.musicName}");
                             Log.d("debug", "musicID: ${it.musicArtist}");
                             Log.d("debug", "musicID: ${it.musicURL}");
+
                         }
                     }
                 }
@@ -98,7 +99,6 @@ class MusicListViewModel(private val musicListRepository: MusicListRepository): 
                 val httpResult = musicListRepository.requestDownloadMusic()
                 when (httpResult){
                     is HttpResult.Success<InputStream> -> {
-
                     }
                 }
             }catch(e: Exception){
@@ -113,7 +113,7 @@ sealed class HttpResult<out R>{
     data class Error(val exception: Exception) : HttpResult<Nothing>()
 }
 
-class MusicListRepository(){
+class MusicRepository(){
     private val url = "http://192.168.2.107:8080/getMusicInfoAll"
 
     suspend fun requestGetMusicList(): HttpResult<List<MusicInfo>> {
