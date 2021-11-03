@@ -88,7 +88,7 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
                 when(httpResult){
                     is HttpResult.Success<List<MusicInfo>> -> {
                         musicListResponse = httpResult.data
-                        musicListResponse?.get(0)?.let{
+                        musicListResponse?.forEach{
                             Log.d("debug", "musicID: ${it.musicID}");
                             Log.d("debug", "musicID: ${it.musicName}");
                             Log.d("debug", "musicID: ${it.musicArtist}");
