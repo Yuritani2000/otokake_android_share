@@ -16,16 +16,16 @@ class StorageMusic {
      * inputStream: 保存したい音楽データのInputStream
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      */
-    fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int){
-        val fileName = "music" + backendId.toString() + ".mp3"
+    fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int, musicFileName: String){
 
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
             //APIレベル28以前の機種の場合の処理
-            storageInMusicLessAPI28(context, inputStream, fileName)
+            val uriFileName = "music" + backendId.toString() + ".mp3"
+            storageInMusicLessAPI28(context, inputStream, musicFileName, uriFileName)
         }else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //APIレベル29以降の機種の場合の処理
-            storageInMusicMoreAPI29(context, inputStream, fileName)
+            storageInMusicMoreAPI29(context, inputStream, musicFileName)
         }
     }
 
@@ -36,10 +36,10 @@ class StorageMusic {
      */
     @RequiresApi(Build.VERSION_CODES.Q)
 
-    private fun storageInMusicMoreAPI29(context: Context, inputStream: InputStream, fileName:String){
+    private fun storageInMusicMoreAPI29(context: Context, inputStream: InputStream, musicFileName:String){
 
         val values= ContentValues().apply {
-            put(MediaStore.Audio.Media.DISPLAY_NAME, fileName) //保存する曲ファイルの名前を入力
+            put(MediaStore.Audio.Media.DISPLAY_NAME, musicFileName) //保存する曲ファイルの名前を入力
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
 
@@ -78,10 +78,10 @@ class StorageMusic {
      * inputStream: 保存したい音楽データのinputStream
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      */
-    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, fileName: String){
+    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, musicFileName: String, uriFileName: String){
         //文字列パスを作製
         val path = context.getExternalFilesDir(Environment.DIRECTORY_MUSIC).toString()
-        val file = path + "/" + fileName
+        val file = path + "/" + uriFileName
 
         //外部ストレージに直接inputStreamの音楽データをコピー
         val state = Environment.getExternalStorageState()
@@ -100,7 +100,7 @@ class StorageMusic {
         }
 
         val values = ContentValues().apply{
-            put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Audio.Media.DISPLAY_NAME, musicFileName)
             put(MediaStore.Audio.Media.MIME_TYPE, "audio/mp3")
             put(MediaStore.Audio.Media.DATA,file)
         }
