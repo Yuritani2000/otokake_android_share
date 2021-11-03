@@ -40,11 +40,15 @@ class GetMusicListActivity : AppCompatActivity() {
         val db2 = MusicDatabase.getInstance(this)    //PlayListのDB作成
         val db2Dao = db2.MusicDao()  //Daoと接続
 
+        val callback = fun(){
+            Log.d("debug", "コールバック呼ばれました");
+        }
+
 
         // 曲の一覧を取得するHTTPリクエスト
         val musicRepository = MusicRepository()
         val musicViewModel = MusicViewModel(musicRepository,db2Dao)
-        musicViewModel.getMusicList()
+        musicViewModel.getMusicList(callback)
 
 
         findViewById<Button>(R.id.download_music_button).setOnClickListener {
@@ -75,7 +79,7 @@ object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSer
 
 
 class MusicViewModel(private val musicListRepository: MusicRepository, private val db2Dao: MusicDao): ViewModel(){
-    fun getMusicList() {
+    fun getMusicList(callback: () -> Unit) {
         var musicListResponse: List<MusicInfo>? = null
         viewModelScope.launch(Dispatchers.Main) {
             try {
@@ -91,9 +95,14 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
 
                             if(it.musicID != null && it.musicName != null && !db2Dao.getBackendId().contains(it.musicID)){
                                 db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
+                            }else{
+                                Log.e("debug", "duplicated data insert");
                             }
+
                             Log.d("debug", "db: ${db2Dao.getAll()}")
                         }
+
+                        callback()
                     }
                 }
             }catch(e: Exception){
