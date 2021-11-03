@@ -3,6 +3,7 @@ package com.miraikeitai2021.otokakeandroid
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -48,39 +49,25 @@ class PlaylistEditActivity : AppCompatActivity() {
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input)
         inputButton.setOnClickListener {
-            //デフォルト音楽の登録
-            val projection = arrayOf(
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.ARTIST
-            )
-            val cursor = this.contentResolver.query(
-                MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
-                projection,
-                null, null, null
-            )
-            cursor?.use {
-                val idIndex = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
-                val titleIndex = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
-                val artistIndex = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+            val callback = fun(){
 
-                while (cursor.moveToNext()) {
-                    val storageId = cursor.getLong(idIndex)
-                    val title = cursor.getString(titleIndex)
-                    val artist = cursor.getString(artistIndex)
+                musicDataList = db2Dao.getAll()
 
-                    db2Dao.insertMusic(storageId,title,artist)
+                // RecyclerViewの取得
+                recyclerView2 = findViewById(R.id.RecyclerView2)
+                // LayoutManagerの設定
+                recyclerView2.layoutManager = LinearLayoutManager(this)
+                // CustomAdapterの生成と設定
+                recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
 
-                }
+                Log.d("debug", "コールバック呼ばれました");
             }
-            musicDataList = db2Dao.getAll()
 
-            // RecyclerViewの取得
-            recyclerView2 = findViewById(R.id.RecyclerView2)
-            // LayoutManagerの設定
-            recyclerView2.layoutManager = LinearLayoutManager(this)
-            // CustomAdapterの生成と設定
-            recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
+            // 曲の一覧を取得するHTTPリクエスト
+            val musicRepository = MusicRepository()
+            val musicViewModel = MusicViewModel(musicRepository,db2Dao)
+            musicViewModel.getMusicList(callback)
+
         }
     }
 

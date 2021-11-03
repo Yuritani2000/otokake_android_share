@@ -11,6 +11,7 @@ import androidx.annotation.Nullable
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.httpDownload
 import com.github.kittinunf.fuel.httpGet
