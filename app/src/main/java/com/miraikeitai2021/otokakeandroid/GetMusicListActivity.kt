@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Button
+import androidx.annotation.Nullable
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -36,10 +37,15 @@ class GetMusicListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_get_music_list)
 
+        val db2 = MusicDatabase.getInstance(this)    //PlayListのDB作成
+        val db2Dao = db2.MusicDao()  //Daoと接続
+
+
         // 曲の一覧を取得するHTTPリクエスト
         val musicRepository = MusicRepository()
-        val musicViewModel = MusicViewModel(musicRepository)
+        val musicViewModel = MusicViewModel(musicRepository,db2Dao)
         musicViewModel.getMusicList()
+
 
         findViewById<Button>(R.id.download_music_button).setOnClickListener {
             musicViewModel.downloadMusic()
@@ -68,7 +74,7 @@ object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSer
 }
 
 
-class MusicViewModel(private val musicListRepository: MusicRepository): ViewModel(){
+class MusicViewModel(private val musicListRepository: MusicRepository, private val db2Dao: MusicDao): ViewModel(){
     fun getMusicList() {
         var musicListResponse: List<MusicInfo>? = null
         viewModelScope.launch(Dispatchers.Main) {
@@ -83,6 +89,10 @@ class MusicViewModel(private val musicListRepository: MusicRepository): ViewMode
                             Log.d("debug", "musicID: ${it.musicArtist}");
                             Log.d("debug", "musicID: ${it.musicURL}");
 
+                            if(it.musicID != null && it.musicName != null){
+                                db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
+                            }
+                            Log.d("debug", "db: ${db2Dao.getAll()}")
                         }
                     }
                 }
