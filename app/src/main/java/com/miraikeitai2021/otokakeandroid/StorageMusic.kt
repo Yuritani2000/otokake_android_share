@@ -15,6 +15,7 @@ class StorageMusic {
      * context: 呼び出し元ActivityのContext
      * inputStream: 保存したい音楽データのInputStream
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
+     * musicFileName: 保存したい音楽ファイルの名前
      */
     fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int, musicFileName: String){
 
@@ -33,6 +34,7 @@ class StorageMusic {
      * ストレージに曲データを保存する関数(端末のAPIが29以上の時)
      * context: 呼び出し元ActivityのContext
      * inputStream: 保存したい音楽データのinputStream
+     * musicFileName: 保存したい音楽ファイルの名前
      */
     @RequiresApi(Build.VERSION_CODES.Q)
 
@@ -77,6 +79,7 @@ class StorageMusic {
      * context: 呼び出し元ActivityのContext
      * inputStream: 保存したい音楽データのinputStream
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
+     * musicFileName: 保存したい音楽ファイルの名前
      */
     private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, musicFileName: String, uriFileName: String){
         //文字列パスを作製
