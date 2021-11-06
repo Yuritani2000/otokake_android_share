@@ -1,5 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
@@ -11,11 +13,15 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class PlaylistEditActivity : AppCompatActivity() {
+
+    private val PERMISSION_WRITE_EX_STR = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +51,19 @@ class PlaylistEditActivity : AppCompatActivity() {
 
         //戻るボタンの表示
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        //パーミッション許可をとる
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED)
+        {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                PERMISSION_WRITE_EX_STR
+            )
+        }
 
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input)
@@ -135,6 +154,27 @@ class PlaylistEditActivity : AppCompatActivity() {
         override fun getItemCount(): Int {
             //リストデータ中の件数をリターン
             return musicDataList.size
+        }
+
+    }
+
+    /**
+     * 外部ストレージを使用してよいかについて，ユーザの操作を受け取る
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if(grantResults.size <= 0){return}
+        when(requestCode){
+            //許可されなかった場合はアプリを止める
+            PERMISSION_WRITE_EX_STR -> if(grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this,"アプリを起動できません", Toast.LENGTH_LONG).show()
+                finish()
+            }
+            else -> return
         }
 
     }
