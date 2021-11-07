@@ -2,6 +2,7 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
@@ -18,6 +19,8 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.io.InputStream
+import java.security.Permission
 
 class PlaylistEditActivity : AppCompatActivity() {
 
@@ -128,11 +131,41 @@ class PlaylistEditActivity : AppCompatActivity() {
             //すでに登録されてる曲は最初にチェックをつける
             holder.checkBox.isChecked = defaultList.contains(item.backend_id)
 
+            // 曲のダウンロードが終了した後に呼ばれるコールバック関数．音楽ファイルをストレージに保存する．
+            val downloadMusicCallback = fun(inputStream: InputStream){
+                Log.d("debug", "callback called: $inputStream")
+                val storageMusic = StorageMusic()
+                if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this@PlaylistEditActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                    Log.d("debug", "save music in storage");
+                    storageMusic.storageInMusic(
+                        this@PlaylistEditActivity,
+                        inputStream,
+                        item.backend_id,
+                        "otokake_${item.backend_id}.mp3"
+                    )
+                }else{
+                    Log.e("debug", "external storage write is not allowed")
+                }
+            }
+
             //曲タップ時の処理
             holder.constraintLayout.setOnClickListener {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = true
+                    Log.d("debug", "element tapped in PlaylistEditActivity")
+
+                    // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
+                    if(item.storage_id == null){
+                        Log.d("debug", "start downloading")
+                        val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)    //PlayListのDB作成
+                        val db2Dao = db2.MusicDao()  //Daoと接続
+                        val musicRepository = MusicRepository()
+                        val musicViewModel = MusicViewModel(musicRepository, db2Dao)
+                        item.url?.let{
+                            musicViewModel.downloadMusic(it, downloadMusicCallback)
+                        }
+                    }
                 }
                 else{   //チェック入ってる(削除)時
                     db3Dao.deleteMusic(playlist_id,item.backend_id)

@@ -33,7 +33,6 @@ import java.io.InputStream
  * 今は仮版としてActivityとして実装しているが，いずれは長谷川君のPlaylisActivityに合わせることになる．
  * */
 class GetMusicListActivity : AppCompatActivity() {
-    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_get_music_list)
@@ -45,6 +44,9 @@ class GetMusicListActivity : AppCompatActivity() {
             Log.d("debug", "コールバック呼ばれました");
         }
 
+        val downloadCallback = fun(inputStream: InputStream){
+            Log.d("debug", "ダウンロード後コールバックが呼ばれました．渡されたinputStream: $inputStream")
+        }
 
         // 曲の一覧を取得するHTTPリクエスト
         val musicRepository = MusicRepository()
@@ -53,7 +55,8 @@ class GetMusicListActivity : AppCompatActivity() {
 
 
         findViewById<Button>(R.id.download_music_button).setOnClickListener {
-            musicViewModel.downloadMusic()
+            val url = "https://testotokake.s3.ap-northeast-1.amazonaws.com/music/maoudamashii-halzion.mp3"
+            musicViewModel.downloadMusic(url, downloadCallback)
         }
     }
 }
@@ -90,9 +93,9 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
                         musicListResponse = httpResult.data
                         musicListResponse?.forEach{
                             Log.d("debug", "musicID: ${it.musicID}");
-                            Log.d("debug", "musicID: ${it.musicName}");
-                            Log.d("debug", "musicID: ${it.musicArtist}");
-                            Log.d("debug", "musicID: ${it.musicURL}");
+                            Log.d("debug", "musicName: ${it.musicName}");
+                            Log.d("debug", "musicArtist: ${it.musicArtist}");
+                            Log.d("debug", "musicURL: ${it.musicURL}");
 
                             if(it.musicID != null && it.musicName != null && !db2Dao.getBackendId().contains(it.musicID)){
                                 db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
@@ -112,13 +115,16 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    fun downloadMusic() {
+    fun downloadMusic(url: String, downloadCallback: (inputStream: InputStream) -> Unit) {
         viewModelScope.launch(Dispatchers.Main) {
             try {
-                val httpResult = musicListRepository.requestDownloadMusic()
+                val httpResult = musicListRepository.requestDownloadMusic(url, downloadCallback)
                 when (httpResult){
                     is HttpResult.Success<InputStream> -> {
+                        downloadCallback(httpResult.data)
+                    }
+                    is HttpResult.Error -> {
+                        Log.e("debug", "file download failed")
                     }
                 }
             }catch(e: Exception){
@@ -167,12 +173,10 @@ class MusicRepository(){
         return httpResult
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    suspend fun requestDownloadMusic(): HttpResult<InputStream> {
-        val url = "https://testotokake.s3.ap-northeast-1.amazonaws.com/music/maoudamashii-halzion.mp3"
+    suspend fun requestDownloadMusic(url: String, callback: (inputStream: InputStream) -> Unit): HttpResult<InputStream> {
         var httpResult: HttpResult<InputStream> = HttpResult.Error(Exception("No http request was executed."))
         withContext(Dispatchers.IO){
-            url.httpDownload().fileDestination { response, url ->
+            val result = url.httpDownload().fileDestination { response, url ->
                 File.createTempFile("temp", ".tmp")
             }.progress{ readBytes, totalBytes ->
                 val progress = readBytes.toFloat() / totalBytes.toFloat()
@@ -188,10 +192,12 @@ class MusicRepository(){
                         val inputStream = result.value.inputStream()
                         Log.d("debug", "downloaded data is: $inputStream");
                         httpResult = HttpResult.Success<InputStream>(inputStream)
+                        callback(inputStream)
                     }
                 }
             }
         }
+        Log.d("debug", "returned value to ViewModel: $httpResult");
         return httpResult
     }
 }
