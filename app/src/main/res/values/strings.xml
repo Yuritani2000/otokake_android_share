@@ -23,4 +23,7 @@
     <string name="stop_button_string">STOP_MUSIC</string>
     <string name="bluetooth_event_string">BLUETOOTH_EVENT</string>
     <string name="text_string">NULL</string>
+    <string name="change_footsteps">足音の変更</string>
+    <string name="boyon">ボヨン</string>
+    <string name="japanese_drum">和太鼓</string>
 </resources>
