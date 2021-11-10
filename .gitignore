@@ -142,4 +142,7 @@ fabric.properties
 
 !/gradle/wrapper/gradle-wrapper.jar
 
+#added on 2021/11/03
+.idea/deploymentTargetDropDown.xml
+
 # End of https://www.toptal.com/developers/gitignore/api/androidstudio
