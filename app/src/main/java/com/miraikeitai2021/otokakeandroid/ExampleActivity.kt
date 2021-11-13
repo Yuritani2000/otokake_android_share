@@ -26,7 +26,7 @@ class ExampleActivity : AppCompatActivity() {
         lateinit var mediaPlayer: MediaPlayer
 
         //1曲目の再生だけ
-        mediaPlayer = MediaPlayer.create(this, checkUri(this,storageIdList[0]))  //再生の準備
+        mediaPlayer = MediaPlayer.create(this, CheckMusicUri().checkUri(storageIdList[0].toInt(), this.contentResolver))  //再生の準備
         mediaPlayer.isLooping = false   //ループ再生OFF
         mediaPlayer.start() //再生開始
     }

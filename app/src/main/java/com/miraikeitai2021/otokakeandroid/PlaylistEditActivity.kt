@@ -2,9 +2,8 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,6 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.InputStream
 import java.security.Permission
+
+const val HANDLE_MUSIC_DOWNLOAD_PROGRESS = 200
 
 class PlaylistEditActivity : AppCompatActivity() {
 
@@ -122,6 +123,12 @@ class PlaylistEditActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: PlaylistEditActivity.ViewHolder, position: Int) {
+            // 未ダウンロードの曲をダウンロードする際に表示するダイアログ．
+            var musicDownloadDialog: MusicDownloadDialog? = null
+
+            // 曲をダウンロードするHTTPリクエストに使用するオブジェクト．
+            var musicRepository: MusicRepository? = null
+
             //リストデータから該当1行分のデータを取得
             val item = musicDataList[position]
             //メニュー名文字列を取得
@@ -132,7 +139,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             holder.checkBox.isChecked = defaultList.contains(item.backend_id)
 
             // 曲のダウンロードが終了した後に呼ばれるコールバック関数．音楽ファイルをストレージに保存する．
-            val downloadMusicCallback = fun(inputStream: InputStream){
+            val downloadMusicSuccessCallback = fun(inputStream: InputStream){
                 Log.d("debug", "callback called: $inputStream")
                 val storageMusic = StorageMusic()
                 if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this@PlaylistEditActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
@@ -143,44 +150,85 @@ class PlaylistEditActivity : AppCompatActivity() {
                         item.backend_id,
                         "otokake_${item.backend_id}.mp3"
                     )
+
+                    val storageId = storageMusic.checkStorageId(this@PlaylistEditActivity)
+                    Log.d("debug", "new music storage id: $storageId");
+                    if(storageId != -1L){
+                        val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)
+                        val db2Dao = db2.MusicDao()
+                        //ストレージIDをデータベースへ登録
+                        db2Dao.updateStorageId(item.backend_id,storageId)
+                    }else{
+                        Log.e("debug", "could not get ");
+                    }
                 }else{
                     Log.e("debug", "external storage write is not allowed")
                 }
             }
 
-            //曲タップ時の処理
-            holder.constraintLayout.setOnClickListener {
+            //
+            val updateMusicDownloadProgressBar = fun(progressPercentage: Int){
+                musicDownloadDialog?.onProgressUpdated(progressPercentage)
+            }
+
+            var previousPercentage = 0
+            // 曲のダウンロードの進捗が変わるたびに呼ばれるコールバック
+            val onDownloadMusicProgressUpdated = fun(progressPercentage: Int){
+                if(previousPercentage != progressPercentage) {
+                    Log.d("debug", "ダウンロード中... $progressPercentage%")
+                    MusicDownloadProgressHandler(updateMusicDownloadProgressBar).obtainMessage(
+                        HANDLE_MUSIC_DOWNLOAD_PROGRESS, progressPercentage, -1).sendToTarget()
+                    previousPercentage = progressPercentage
+                }
+            }
+
+            // ダイアログのキャンセルボタンが押されたときに呼び出される関数．DBへの登録解除と，チェックボックスをはずす動作をする．
+            val onClickMusicDownloadDialogCancelButton = fun(){
+                // DBの中間テーブルから削除
+                db3Dao.deleteMusic(playlist_id,item.backend_id)
+                holder.checkBox.isChecked = false
+                musicRepository?.cancelDownloadingMusic()
+            }
+
+            val onClickCheckBox = fun(){
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
+                    // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = true
                     Log.d("debug", "element tapped in PlaylistEditActivity")
 
                     // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
                     if(item.storage_id == null){
+                        // 曲をダウンロードする際のダイアログを表示
+                        musicDownloadDialog = MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
+                        musicDownloadDialog?.show(supportFragmentManager, "music_downloading_dialog")
                         Log.d("debug", "start downloading")
                         val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)    //PlayListのDB作成
                         val db2Dao = db2.MusicDao()  //Daoと接続
-                        val musicRepository = MusicRepository()
-                        val musicViewModel = MusicViewModel(musicRepository, db2Dao)
-                        item.url?.let{
-                            musicViewModel.downloadMusic(it, downloadMusicCallback)
+                        musicRepository = MusicRepository()
+                        musicRepository?.let{
+                            val musicViewModel = MusicViewModel(it, db2Dao)
+                            item.url?.let{
+                                musicViewModel.downloadMusic(it, downloadMusicSuccessCallback, onDownloadMusicProgressUpdated)
+                            }
                         }
                     }
                 }
                 else{   //チェック入ってる(削除)時
+                    // DBの中間テーブルから削除
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = false
                 }
             }
 
+            //曲タップ時の処理
+            holder.constraintLayout.setOnClickListener {
+                onClickCheckBox()
+            }
+
             //チェックボックスタップ時の処理
             holder.checkBox.setOnClickListener {
-                if(holder.checkBox.isChecked){  //チェック入ってない(登録)時
-                    db3Dao.insertMusic(playlist_id,item.backend_id)
-                }
-                else{   //チェック入ってる(削除)時
-                    db3Dao.deleteMusic(playlist_id,item.backend_id)
-                }
+                onClickCheckBox()
             }
         }
 
@@ -210,5 +258,22 @@ class PlaylistEditActivity : AppCompatActivity() {
             else -> return
         }
 
+    }
+}
+
+/**
+ * 曲のダウンロードの進捗を報告するメソッドは別スレッドで呼ばれる．別スレッド上でUIを更新することは許されていないため，
+ * 一旦ダウンロード進捗を報告するメソッドが呼ばれたスレッドからUI更新可能なメインスレッドに値を渡してやる必要がある．
+ * その処理を担うのがこのHandler.
+  */
+open class MusicDownloadProgressHandler(
+    private val updateMusicDownloadProgressBar: (progressPercentage: Int) -> Unit
+): Handler(Looper.getMainLooper()){
+    override fun handleMessage(msg: Message){
+        when(msg.what){
+            HANDLE_MUSIC_DOWNLOAD_PROGRESS -> {
+                updateMusicDownloadProgressBar(msg.arg1)
+            }
+        }
     }
 }

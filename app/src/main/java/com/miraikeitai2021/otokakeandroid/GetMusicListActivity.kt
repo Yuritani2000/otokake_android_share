@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.core.requests.CancellableRequest
 import com.github.kittinunf.fuel.httpDownload
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
@@ -44,8 +45,12 @@ class GetMusicListActivity : AppCompatActivity() {
             Log.d("debug", "コールバック呼ばれました");
         }
 
-        val downloadCallback = fun(inputStream: InputStream){
+        val downloadSuccessCallback = fun(inputStream: InputStream){
             Log.d("debug", "ダウンロード後コールバックが呼ばれました．渡されたinputStream: $inputStream")
+        }
+
+        val onDownloadProgressUpdated = fun(progressPercentage: Int){
+            Log.d("debug", "ダウンロード中... $progressPercentage%")
         }
 
         // 曲の一覧を取得するHTTPリクエスト
@@ -56,7 +61,7 @@ class GetMusicListActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.download_music_button).setOnClickListener {
             val url = "https://testotokake.s3.ap-northeast-1.amazonaws.com/music/maoudamashii-halzion.mp3"
-            musicViewModel.downloadMusic(url, downloadCallback)
+            musicViewModel.downloadMusic(url, downloadSuccessCallback, onDownloadProgressUpdated)
         }
     }
 }
@@ -115,13 +120,13 @@ class MusicViewModel(private val musicListRepository: MusicRepository, private v
         }
     }
 
-    fun downloadMusic(url: String, downloadCallback: (inputStream: InputStream) -> Unit) {
+    fun downloadMusic(url: String, downloadSuccessCallback: (inputStream: InputStream) -> Unit, onDownloadProgressUpdated: (progressPercentage: Int) -> Unit) {
         viewModelScope.launch(Dispatchers.Main) {
             try {
-                val httpResult = musicListRepository.requestDownloadMusic(url, downloadCallback)
+                val httpResult = musicListRepository.requestDownloadMusic(url, downloadSuccessCallback, onDownloadProgressUpdated)
                 when (httpResult){
                     is HttpResult.Success<InputStream> -> {
-                        downloadCallback(httpResult.data)
+                        downloadSuccessCallback(httpResult.data)
                     }
                     is HttpResult.Error -> {
                         Log.e("debug", "file download failed")
@@ -141,6 +146,7 @@ sealed class HttpResult<out R>{
 
 class MusicRepository(){
     private val url = "http://192.168.2.107:8080/getMusicInfoAll"
+    private var musicDownloadingRequest: CancellableRequest? = null
 
     suspend fun requestGetMusicList(): HttpResult<List<MusicInfo>> {
         var resultStr = "no data"
@@ -173,14 +179,14 @@ class MusicRepository(){
         return httpResult
     }
 
-    suspend fun requestDownloadMusic(url: String, callback: (inputStream: InputStream) -> Unit): HttpResult<InputStream> {
+    suspend fun requestDownloadMusic(url: String, successCallback: (inputStream: InputStream) -> Unit, onProgressUpdated: (progressPercentage: Int) -> Unit): HttpResult<InputStream> {
         var httpResult: HttpResult<InputStream> = HttpResult.Error(Exception("No http request was executed."))
         withContext(Dispatchers.IO){
-            val result = url.httpDownload().fileDestination { response, url ->
+            musicDownloadingRequest = url.httpDownload().fileDestination { response, url ->
                 File.createTempFile("temp", ".tmp")
             }.progress{ readBytes, totalBytes ->
                 val progress = readBytes.toFloat() / totalBytes.toFloat()
-                Log.d("debug", "current progress: $progress");
+                onProgressUpdated((progress * 100).toInt())
             }.response{ res, req, result ->
                 when(result){
                     is Result.Failure -> {
@@ -192,12 +198,17 @@ class MusicRepository(){
                         val inputStream = result.value.inputStream()
                         Log.d("debug", "downloaded data is: $inputStream");
                         httpResult = HttpResult.Success<InputStream>(inputStream)
-                        callback(inputStream)
+                        successCallback(inputStream)
                     }
                 }
             }
         }
         Log.d("debug", "returned value to ViewModel: $httpResult");
         return httpResult
+    }
+
+    fun cancelDownloadingMusic(){
+        Log.d("debug", "cancel musicDownloadingRequest: $musicDownloadingRequest");
+        musicDownloadingRequest?.cancel()
     }
 }

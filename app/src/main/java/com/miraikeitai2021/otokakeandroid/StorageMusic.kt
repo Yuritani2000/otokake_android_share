@@ -111,4 +111,33 @@ class StorageMusic {
         //外部ストレージにある音楽ファイルの直接的なUriをMediaStore用のUriに変換
         context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
     }
+
+    fun checkStorageId(context: Context): Long{
+        //↓ID検索用
+
+        //projection: 欲しい情報を定義
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+        )
+
+        //上のprojectionとselectionを利用した問い合わせ変数を作製
+        val cursor = context.contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, //外部ストレージ
+            projection,
+            null,
+            null, // selectionArgs,
+            null
+        )
+
+        var id: Long = -1
+
+        cursor?.use{
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+
+            while (cursor.moveToNext()) {
+                id = cursor.getLong(idColumn)
+            }
+        }
+        return id
+    }
 }

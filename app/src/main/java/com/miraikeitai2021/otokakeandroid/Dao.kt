@@ -77,6 +77,10 @@ interface MusicDao{
     //HTTP通信で受け取った曲の登録
     @Query("INSERT INTO Music (backend_id,title,artist,url) VALUES (:backend, :title, :artist, :url)")
     fun insertHTTPMusic(backend: Int,title: String,artist: String?,url: String?)
+
+    //ダウンロードした曲のストレージIDを登録する
+    @Query("UPDATE Music SET storage_id = :storageId WHERE backend_id = :backendId")
+    fun updateStorageId(backendId: Int,storageId: Long)
 }
 
 
