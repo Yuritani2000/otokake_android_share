@@ -1,77 +1,29 @@
 package com.miraikeitai2021.otokakeandroid
 
 
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
+import android.os.*
 import android.util.Log
-import android.view.KeyEvent
-import android.widget.Button
-import androidx.annotation.Nullable
-import androidx.annotation.RequiresApi
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.requests.CancellableRequest
 import com.github.kittinunf.fuel.httpDownload
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonTransformingSerializer
 import java.io.File
 import java.io.InputStream
 
+// HTTP通信を行うスレッドとUIスレッドとの間で値の受け渡しを行うHandlerで使用する識別コード．
+const val HANDLE_MUSIC_DOWNLOAD_PROGRESS_UPDATED = 200
+const val HANDLE_GET_MUSIC_LIST_FAILED = 201
+const val HANDLE_GET_MUSIC_LIST_SUCCESS = 202
+const val HANDLE_MUSIC_DOWNLOAD_FAILED = 203
+const val HANDLE_MUSIC_DOWNLOAD_SUCCESS = 204
+
 /**
- * サーバから，曲一覧を取得するAPIにアクセスして，登録されている曲の情報を排列で取得するActivity.
- * 今は仮版としてActivityとして実装しているが，いずれは長谷川君のPlaylisActivityに合わせることになる．
- * */
-class GetMusicListActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_get_music_list)
-
-        val db2 = MusicDatabase.getInstance(this)    //PlayListのDB作成
-        val db2Dao = db2.MusicDao()  //Daoと接続
-
-        val callback = fun(){
-            Log.d("debug", "コールバック呼ばれました");
-        }
-
-        val downloadSuccessCallback = fun(inputStream: InputStream){
-            Log.d("debug", "ダウンロード後コールバックが呼ばれました．渡されたinputStream: $inputStream")
-        }
-
-        val onDownloadProgressUpdated = fun(progressPercentage: Int){
-            Log.d("debug", "ダウンロード中... $progressPercentage%")
-        }
-
-        // 曲の一覧を取得するHTTPリクエスト
-        val musicRepository = MusicRepository()
-        val musicViewModel = MusicViewModel(musicRepository,db2Dao)
-        musicViewModel.getMusicList(callback)
-
-
-        findViewById<Button>(R.id.download_music_button).setOnClickListener {
-            val url = "https://testotokake.s3.ap-northeast-1.amazonaws.com/music/maoudamashii-halzion.mp3"
-            musicViewModel.downloadMusic(url, downloadSuccessCallback, onDownloadProgressUpdated)
-        }
-    }
-}
-
-@Serializable
-data class MusicList(
-    @Serializable(with = MusicListSerializer::class)
-    val musicList: List<MusicInfo>
-)
-
+ * 受け取ったJSON文字列をオブジェクトに起こし，プログラム内で扱う際の型定義．
+ * JSONの内容はnullになり得るため，プロパティはすべてnullableである．
+ * この中の値を使用する際はnullチェックを行うこと．
+ */
 @Serializable
 @SerialName("MusicInfo")
 data class MusicInfo(
@@ -81,134 +33,173 @@ data class MusicInfo(
     @SerialName("musicURL")val musicURL: String?
 )
 
-object MusicListSerializer : JsonTransformingSerializer<List<MusicInfo>>(ListSerializer(MusicInfo.serializer())){
-    override fun transformDeserialize(element: JsonElement): JsonElement =
-        if (element is JsonArray) JsonArray(listOf(element)) else element
-}
-
-
-class MusicViewModel(private val musicListRepository: MusicRepository, private val db2Dao: MusicDao): ViewModel(){
-    fun getMusicList(callback: () -> Unit) {
-        var musicListResponse: List<MusicInfo>? = null
-        viewModelScope.launch(Dispatchers.Main) {
-            try {
-                val httpResult = musicListRepository.requestGetMusicList()
-                when(httpResult){
-                    is HttpResult.Success<List<MusicInfo>> -> {
-                        musicListResponse = httpResult.data
-                        musicListResponse?.forEach{
-                            Log.d("debug", "musicID: ${it.musicID}");
-                            Log.d("debug", "musicName: ${it.musicName}");
-                            Log.d("debug", "musicArtist: ${it.musicArtist}");
-                            Log.d("debug", "musicURL: ${it.musicURL}");
-
-                            if(it.musicID != null && it.musicName != null && !db2Dao.getBackendId().contains(it.musicID)){
-                                db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
-                            }else{
-                                Log.e("debug", "duplicated data insert");
-                            }
-
-                            Log.d("debug", "db: ${db2Dao.getAll()}")
-                        }
-
-                        callback()
-                    }
-                }
-            }catch(e: Exception){
-                Log.e("debug", e.toString())
-            }
-        }
-    }
-
-    fun downloadMusic(url: String, downloadSuccessCallback: (inputStream: InputStream) -> Unit, onDownloadProgressUpdated: (progressPercentage: Int) -> Unit) {
-        viewModelScope.launch(Dispatchers.Main) {
-            try {
-                val httpResult = musicListRepository.requestDownloadMusic(url, downloadSuccessCallback, onDownloadProgressUpdated)
-                when (httpResult){
-                    is HttpResult.Success<InputStream> -> {
-                        downloadSuccessCallback(httpResult.data)
-                    }
-                    is HttpResult.Error -> {
-                        Log.e("debug", "file download failed")
-                    }
-                }
-            }catch(e: Exception){
-                Log.e("debug", e.toString())
-            }
-        }
-    }
-}
-
-sealed class HttpResult<out R>{
-    data class Success<out T>(val data: T) : HttpResult<T>()
-    data class Error(val exception: Exception) : HttpResult<Nothing>()
-}
-
-class MusicRepository(){
+/**
+ * 曲一覧の取得，曲のダウンロードに関するHTTPリクエストをまとめたもの．
+ */
+class MusicHttpRequests(){
+    /**
+     *  曲一覧の取得先となるURL.サーバが本番のものになり次第変更する必要がある．
+     */
     private val url = "http://192.168.2.107:8080/getMusicInfoAll"
+
+    /**曲がダウンロードされている時は，この中にCancellableRequestのオブジェクトが入る．*
+      */
     private var musicDownloadingRequest: CancellableRequest? = null
 
-    suspend fun requestGetMusicList(): HttpResult<List<MusicInfo>> {
-        var resultStr = "no data"
-        var httpResult: HttpResult<List<MusicInfo>> = HttpResult.Error(Exception("No http request was executed."))
-
-        withContext(Dispatchers.IO){
-            val (_, _, result) = url.httpGet()
-                .responseString()
-
-            when(result) {
+    /**
+     * 曲一覧の取得を行うメソッド．handlerのMessage経由で曲一覧を取得する．
+     */
+    fun requestGetMusicList(handler: GetMusicListHandler){
+        val httpAsync = url.httpGet().responseString { _, _, result ->
+            when (result) {
+                // HTTPリクエストが失敗した場合
                 is Result.Failure -> {
                     val ex = result.getException()
                     Log.e("debug", ex.toString())
-                    httpResult = HttpResult.Error(Exception(ex.toString()))
+                    // このスレッドはHTTP通信を行うスレッドなので，UI(メイン)スレッドに値を渡す．
+                    // 以下の同じメソッドでも同じことをしている．
+                    handler.obtainMessage(HANDLE_GET_MUSIC_LIST_FAILED, ex)
+                        .sendToTarget()
                 }
+                // HTTPリクエストが成功した場合
                 is Result.Success -> {
-                    resultStr = result.value
+                    // HTTPリクエストの結果からJSONの文字列を取り出す．
+                    val resultStr = result.value
                     Log.d("debug", "resultStr: $resultStr")
                     try {
+                        // JSON文字列からMusicInfoオブジェクトのListに変換
                         val musicList = Json.decodeFromString<List<MusicInfo>>(resultStr)
-                        Log.d("debug", "result converted to object: ${musicList}")
-                        httpResult = HttpResult.Success(musicList)
-                    }catch(e: Exception){
-                        Log.e("debug" , e.toString())
-                        httpResult = HttpResult.Error(e)
+                        Log.d("debug", "result converted to object: $musicList")
+                        handler.obtainMessage(HANDLE_GET_MUSIC_LIST_SUCCESS, musicList)
+                            .sendToTarget()
+                    }catch(ex: Exception){
+                        Log.e("debug" , ex.toString())
+                        handler.obtainMessage(HANDLE_GET_MUSIC_LIST_FAILED, ex)
+                            .sendToTarget()
                     }
                 }
             }
         }
-        return httpResult
+        httpAsync.join()
     }
 
-    suspend fun requestDownloadMusic(url: String, successCallback: (inputStream: InputStream) -> Unit, onProgressUpdated: (progressPercentage: Int) -> Unit): HttpResult<InputStream> {
-        var httpResult: HttpResult<InputStream> = HttpResult.Error(Exception("No http request was executed."))
-        withContext(Dispatchers.IO){
-            musicDownloadingRequest = url.httpDownload().fileDestination { response, url ->
-                File.createTempFile("temp", ".tmp")
-            }.progress{ readBytes, totalBytes ->
-                val progress = readBytes.toFloat() / totalBytes.toFloat()
-                onProgressUpdated((progress * 100).toInt())
-            }.response{ res, req, result ->
-                when(result){
-                    is Result.Failure -> {
-                        val ex = result.getException()
-                        Log.e("debug", ex.toString())
-                        httpResult = HttpResult.Error(Exception(ex.toString()))
-                    }
-                    is Result.Success -> {
-                        val inputStream = result.value.inputStream()
-                        Log.d("debug", "downloaded data is: $inputStream");
-                        httpResult = HttpResult.Success<InputStream>(inputStream)
-                        successCallback(inputStream)
-                    }
+    /**
+     * 与えられたURLから曲のダウンロードを行うメソッド．
+     * HandlerのMessage経由で，ダウンロードした曲のInputStreamを取得する．
+     */
+    fun requestDownloadMusic(
+        url: String,
+        handler: MusicDownloadHandler)
+    {
+        musicDownloadingRequest = url.httpDownload().fileDestination { _, _ ->
+            File.createTempFile("temp", ".tmp")
+        }.progress{ readBytes, totalBytes ->
+            // ダウンロードするデータの総量と，ダウンロードしたデータ量の割合を求める．
+            val progress = readBytes.toFloat() / totalBytes.toFloat()
+            // 割合を百分率にしてInt型に変換したものをUIスレッドに送る．
+            handler.obtainMessage(HANDLE_MUSIC_DOWNLOAD_PROGRESS_UPDATED, (progress * 100).toInt(), -1)
+                .sendToTarget()
+        }.response{ _, _, result ->
+            when(result){
+                // HTTPリクエストが失敗した場合
+                is Result.Failure -> {
+                    val ex = result.getException()
+                    Log.e("debug", ex.toString())
+                    handler.obtainMessage(HANDLE_MUSIC_DOWNLOAD_FAILED, ex)
+                        .sendToTarget()
+                }
+                // HTTPリクエストが成功した場合
+                is Result.Success -> {
+                    // HTTPリクエストの結果に入っているバイト配列をInputStreamに変換．これが曲データとなる．
+                    val inputStream = result.value.inputStream()
+                    Log.d("debug", "downloaded data is: $inputStream")
+                    handler.obtainMessage(HANDLE_MUSIC_DOWNLOAD_SUCCESS, inputStream)
+                        .sendToTarget()
                 }
             }
         }
-        Log.d("debug", "returned value to ViewModel: $httpResult");
-        return httpResult
     }
 
+    /**
+     * 曲のダウンロードをキャンセルするためのメソッド．
+     * 曲のダウンロードが行なわれていない時は何もしない．
+     */
     fun cancelDownloadingMusic(){
-        Log.d("debug", "cancel musicDownloadingRequest: $musicDownloadingRequest");
+        Log.d("debug", "cancel musicDownloadingRequest: $musicDownloadingRequest")
         musicDownloadingRequest?.cancel()
+    }
+}
+
+/**
+ * 各HTTPメソッドは別スレッドで呼ばれる．
+ * 曲をダウンロードした後の処理によって，ダイアログの表示などを行いたいが，
+ * 別スレッド上でUIを更新することは許されていないため，
+ * 各メソッドが呼ばれたスレッドからUI更新可能なメインスレッドに，取得した情報を渡してやる必要がある．
+ * その処理を担うのがこのHandler.
+ * このHandlerは，曲のダウンロードに関する値を受け取った時の処理を書く．
+ */
+open class MusicDownloadHandler(
+    private val handleMusicDownloadProgressUpdated: (progressPercentage: Int) -> Unit,
+    private val handleMusicDownloadFailed: (exception: Exception) -> Unit,
+    private val handleMusicDownloadSuccess: (inputStream: InputStream) -> Unit,
+): Handler(Looper.getMainLooper()){
+    override fun handleMessage(msg: Message){
+        when(msg.what){
+            // 曲のダウンロードの進捗が更新された場合
+            HANDLE_MUSIC_DOWNLOAD_PROGRESS_UPDATED -> {
+                handleMusicDownloadProgressUpdated(msg.arg1)
+            }
+            // 曲のダウンロードに失敗した場合
+            HANDLE_MUSIC_DOWNLOAD_FAILED -> {
+                val exception = msg.obj as? Exception
+                exception?.let{
+                    handleMusicDownloadFailed(it)
+                }
+            }
+            // 曲のダウンロードに成功した場合
+            HANDLE_MUSIC_DOWNLOAD_SUCCESS -> {
+                val inputStream = msg.obj as? InputStream
+                inputStream?.let{
+                    handleMusicDownloadSuccess(it)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 各HTTPメソッドは別スレッドで呼ばれる．
+ * 曲一覧を取得した後の処理によって，ダイアログの表示などを行いたいが，
+ * 別スレッド上でUIを更新することは許されていないため，
+ * 各メソッドが呼ばれたスレッドからUI更新可能なメインスレッドに，取得した情報を渡してやる必要がある．
+ * その処理を担うのがこのHandler.
+ * 上のMusicDownloadHandlerと同じく，こちらは曲一覧の取得に関する値を受け取った時の処理を書く．
+ */
+class GetMusicListHandler(
+    private val handleGetMusicListFailed: (exception: Exception) -> Unit,
+    private val handleGetMusicListSuccess: (musicList: List<MusicInfo>) -> Unit
+): Handler(Looper.getMainLooper()){
+    override fun handleMessage(msg: Message){
+        when(msg.what){
+            // 曲一覧の取得に失敗した場合
+            HANDLE_GET_MUSIC_LIST_FAILED -> {
+                val exception = msg.obj as? Exception
+                exception?.let{
+                    handleGetMusicListFailed(it)
+                }
+            }
+            // 曲一覧の取得に成功した場合
+            HANDLE_GET_MUSIC_LIST_SUCCESS -> {
+                // msg.objはAny型なので，きちんとList<MusicInfo>であることを担保する．
+                val musicList = (msg.obj as? List<*>)?.filterIsInstance<MusicInfo>()
+                Log.d("debug", "handler called: $musicList")
+                if(musicList?.size == 0){
+                    Log.e("debug", "gotten music list size is zero.")
+                }
+                musicList?.let{
+                    handleGetMusicListSuccess(it)
+                }
+            }
+        }
     }
 }

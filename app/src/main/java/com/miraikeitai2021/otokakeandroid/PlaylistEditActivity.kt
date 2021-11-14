@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -14,14 +13,12 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.InputStream
-import java.security.Permission
-
-const val HANDLE_MUSIC_DOWNLOAD_PROGRESS = 200
 
 class PlaylistEditActivity : AppCompatActivity() {
 
@@ -72,8 +69,27 @@ class PlaylistEditActivity : AppCompatActivity() {
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input)
         inputButton.setOnClickListener {
-            val callback = fun(){
 
+            // 曲のダウンロード成功後に呼ばれるコールバック関数．引数musicListResponseには，曲のデータMusicInfoが入ったListが渡ってくる．
+            val handleGetMusicListSuccess = fun(musicListResponse: List<MusicInfo>){
+                musicListResponse.forEach{
+                    Log.d("debug", "musicID: ${it.musicID}")
+                    Log.d("debug", "musicName: ${it.musicName}")
+                    Log.d("debug", "musicArtist: ${it.musicArtist}")
+                    Log.d("debug", "musicURL: ${it.musicURL}")
+
+                    // MusicInfoのプロパティは全てnullableなので，DB登録前にnullチェックを行う．
+                    // 同時に，その曲がすでにDB上に存在するかを見て，二重に登録することを防ぐ．
+                    if(it.musicID != null && it.musicName != null && !db2Dao.getBackendId().contains(it.musicID)){
+                        db2Dao.insertHTTPMusic(it.musicID,it.musicName,it.musicArtist,it.musicURL)
+                    }else{
+                        Log.e("debug", "duplicated data insert")
+                    }
+
+                    Log.d("debug", "db: ${db2Dao.getAll()}")
+                }
+
+                // データベースに登録し，更新された曲一覧を取得する．
                 musicDataList = db2Dao.getAll()
 
                 // RecyclerViewの取得
@@ -83,14 +99,28 @@ class PlaylistEditActivity : AppCompatActivity() {
                 // CustomAdapterの生成と設定
                 recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
 
-                Log.d("debug", "コールバック呼ばれました");
+                Log.d("debug", "コールバック呼ばれました")
             }
 
-            // 曲の一覧を取得するHTTPリクエスト
-            val musicRepository = MusicRepository()
-            val musicViewModel = MusicViewModel(musicRepository,db2Dao)
-            musicViewModel.getMusicList(callback)
+            // 曲一覧の取得に失敗したときに呼ばれるコールバック．エラー内容をダイアログに表示する．
+            val handleGetMusicListFailed = fun(exception: Exception){
+                Log.e("debug", "failed to get music list from backend.")
+                AlertDialog.Builder(this@PlaylistEditActivity)
+                    .setTitle(R.string.get_music_list_failed_title)
+                    .setMessage("${getString(R.string.get_music_list_failed_message)}\n エラー詳細: ${exception.toString()}")
+                    .setPositiveButton(R.string.ok, null)
+                    .show()
+            }
 
+            // HTTP通信を行っているスレッドから情報を受け取るためのHandlerを呼び出す．
+            val getMusicListHandler = GetMusicListHandler(
+                handleGetMusicListFailed,
+                handleGetMusicListSuccess
+            )
+
+            // 曲の一覧を取得するHTTPリクエスト
+            val musicHttpRequests = MusicHttpRequests()
+            musicHttpRequests.requestGetMusicList(getMusicListHandler)
         }
     }
 
@@ -127,7 +157,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             var musicDownloadDialog: MusicDownloadDialog? = null
 
             // 曲をダウンロードするHTTPリクエストに使用するオブジェクト．
-            var musicRepository: MusicRepository? = null
+            var musicHttpRequests: MusicHttpRequests? = null
 
             //リストデータから該当1行分のデータを取得
             val item = musicDataList[position]
@@ -139,11 +169,12 @@ class PlaylistEditActivity : AppCompatActivity() {
             holder.checkBox.isChecked = defaultList.contains(item.backend_id)
 
             // 曲のダウンロードが終了した後に呼ばれるコールバック関数．音楽ファイルをストレージに保存する．
-            val downloadMusicSuccessCallback = fun(inputStream: InputStream){
+            val handleMusicDownloadSuccess = fun(inputStream: InputStream){
                 Log.d("debug", "callback called: $inputStream")
                 val storageMusic = StorageMusic()
+                // APIレベルが29以上である（ファイル書き出し許可が必要ない）か，ファイル書き出し許可が取れている場合のみ，曲のストレージへの保存処理を行う．
                 if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this@PlaylistEditActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    Log.d("debug", "save music in storage");
+                    Log.d("debug", "save music in storage")
                     storageMusic.storageInMusic(
                         this@PlaylistEditActivity,
                         inputStream,
@@ -151,35 +182,40 @@ class PlaylistEditActivity : AppCompatActivity() {
                         "otokake_${item.backend_id}.mp3"
                     )
 
+                    // 保存した曲のストレージIDを保存する．
                     val storageId = storageMusic.checkStorageId(this@PlaylistEditActivity)
-                    Log.d("debug", "new music storage id: $storageId");
-                    if(storageId != -1L){
+                    Log.d("debug", "new music storage id: $storageId")
+                    if(storageId != -1L){   // 保存した曲のストレージIDが返って来れば，それをDBへ登録する．
                         val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)
                         val db2Dao = db2.MusicDao()
                         //ストレージIDをデータベースへ登録
                         db2Dao.updateStorageId(item.backend_id,storageId)
                     }else{
-                        Log.e("debug", "could not get ");
+                        Log.e("debug", "could not get ")
                     }
                 }else{
                     Log.e("debug", "external storage write is not allowed")
                 }
             }
 
-            //
-            val updateMusicDownloadProgressBar = fun(progressPercentage: Int){
-                musicDownloadDialog?.onProgressUpdated(progressPercentage)
-            }
-
-            var previousPercentage = 0
             // 曲のダウンロードの進捗が変わるたびに呼ばれるコールバック
-            val onDownloadMusicProgressUpdated = fun(progressPercentage: Int){
+            // ダウンロード進捗が前回の更新と違う場合にのみダイアログの表示内容を更新する．
+            var previousPercentage = 0
+            val handleMusicDownloadProgressUpdated = fun(progressPercentage: Int){
                 if(previousPercentage != progressPercentage) {
                     Log.d("debug", "ダウンロード中... $progressPercentage%")
-                    MusicDownloadProgressHandler(updateMusicDownloadProgressBar).obtainMessage(
-                        HANDLE_MUSIC_DOWNLOAD_PROGRESS, progressPercentage, -1).sendToTarget()
+                    musicDownloadDialog?.onProgressUpdated(progressPercentage)
                     previousPercentage = progressPercentage
                 }
+            }
+
+            // 曲のダウンロードが失敗したときに呼ばれるコールバック．エラー内容をダイアログに表示する．
+            val handleMusicDownloadFailed = fun(exception: Exception){
+                AlertDialog.Builder(this@PlaylistEditActivity)
+                    .setTitle(R.string.download_music_failed_title)
+                    .setMessage("${getString(R.string.download_music_failed_message)}\n エラー詳細: $exception")
+                    .setPositiveButton(R.string.ok, null)
+                    .show()
             }
 
             // ダイアログのキャンセルボタンが押されたときに呼び出される関数．DBへの登録解除と，チェックボックスをはずす動作をする．
@@ -187,7 +223,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 // DBの中間テーブルから削除
                 db3Dao.deleteMusic(playlist_id,item.backend_id)
                 holder.checkBox.isChecked = false
-                musicRepository?.cancelDownloadingMusic()
+                musicHttpRequests?.cancelDownloadingMusic()
             }
 
             val onClickCheckBox = fun(){
@@ -203,13 +239,17 @@ class PlaylistEditActivity : AppCompatActivity() {
                         musicDownloadDialog = MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
                         musicDownloadDialog?.show(supportFragmentManager, "music_downloading_dialog")
                         Log.d("debug", "start downloading")
-                        val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)    //PlayListのDB作成
-                        val db2Dao = db2.MusicDao()  //Daoと接続
-                        musicRepository = MusicRepository()
-                        musicRepository?.let{
-                            val musicViewModel = MusicViewModel(it, db2Dao)
+                        musicHttpRequests = MusicHttpRequests()
+                        musicHttpRequests?.let{ musicHttpRequests ->
                             item.url?.let{
-                                musicViewModel.downloadMusic(it, downloadMusicSuccessCallback, onDownloadMusicProgressUpdated)
+                                // HTTP通信を行うスレッドから情報をメインスレッドに取得すると，以下のコンストラクタに渡したメソッドが呼び出される．
+                                val musicDownloadHandler = MusicDownloadHandler(
+                                    handleMusicDownloadProgressUpdated,
+                                    handleMusicDownloadFailed,
+                                    handleMusicDownloadSuccess
+                                )
+                                // 実際にHTTPリクエストを送信して曲をダウンロードする．
+                                musicHttpRequests.requestDownloadMusic(it, musicDownloadHandler)
                             }
                         }
                     }
@@ -257,23 +297,6 @@ class PlaylistEditActivity : AppCompatActivity() {
             }
             else -> return
         }
-
     }
 }
 
-/**
- * 曲のダウンロードの進捗を報告するメソッドは別スレッドで呼ばれる．別スレッド上でUIを更新することは許されていないため，
- * 一旦ダウンロード進捗を報告するメソッドが呼ばれたスレッドからUI更新可能なメインスレッドに値を渡してやる必要がある．
- * その処理を担うのがこのHandler.
-  */
-open class MusicDownloadProgressHandler(
-    private val updateMusicDownloadProgressBar: (progressPercentage: Int) -> Unit
-): Handler(Looper.getMainLooper()){
-    override fun handleMessage(msg: Message){
-        when(msg.what){
-            HANDLE_MUSIC_DOWNLOAD_PROGRESS -> {
-                updateMusicDownloadProgressBar(msg.arg1)
-            }
-        }
-    }
-}
