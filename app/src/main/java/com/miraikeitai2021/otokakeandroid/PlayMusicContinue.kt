@@ -23,7 +23,7 @@ class PlayMusicContinue() {
         myStorageIdList = storageIdList
         resetOrder()
 
-        playMusic.startMusic(checkMusicUri.checkUri(context, myStorageIdList[order].toInt(),context.contentResolver))
+        playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(),context.contentResolver))
     }
 
     /**
@@ -47,7 +47,7 @@ class PlayMusicContinue() {
             if(playMusic.getMediaPlayer() != null){
                 playMusic.stopMusic()
             }
-            playMusic.startMusic(checkMusicUri.checkUri(context, myStorageIdList[order].toInt(), context.contentResolver))
+            playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
         }
     }
 
