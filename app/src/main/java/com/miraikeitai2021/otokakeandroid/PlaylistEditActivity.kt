@@ -226,33 +226,37 @@ class PlaylistEditActivity : AppCompatActivity() {
                 musicHttpRequests?.cancelDownloadingMusic()
             }
 
-            val onClickCheckBox = fun(){
+            val downloadMusic = fun(){
+                // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
+                if(item.storage_id == null){
+                    // 曲をダウンロードする際のダイアログを表示
+                    musicDownloadDialog = MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
+                    musicDownloadDialog?.show(supportFragmentManager, "music_downloading_dialog")
+                    Log.d("debug", "start downloading")
+                    musicHttpRequests = MusicHttpRequests()
+                    musicHttpRequests?.let{ musicHttpRequests ->
+                        item.url?.let{
+                            // HTTP通信を行うスレッドから情報をメインスレッドに取得すると，以下のコンストラクタに渡したメソッドが呼び出される．
+                            val musicDownloadHandler = MusicDownloadHandler(
+                                handleMusicDownloadProgressUpdated,
+                                handleMusicDownloadFailed,
+                                handleMusicDownloadSuccess
+                            )
+                            // 実際にHTTPリクエストを送信して曲をダウンロードする．
+                            musicHttpRequests.requestDownloadMusic(it, musicDownloadHandler)
+                        }
+                    }
+                }
+            }
+
+            //曲タップ時の処理
+            holder.constraintLayout.setOnClickListener {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = true
                     Log.d("debug", "element tapped in PlaylistEditActivity")
-
-                    // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
-                    if(item.storage_id == null){
-                        // 曲をダウンロードする際のダイアログを表示
-                        musicDownloadDialog = MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
-                        musicDownloadDialog?.show(supportFragmentManager, "music_downloading_dialog")
-                        Log.d("debug", "start downloading")
-                        musicHttpRequests = MusicHttpRequests()
-                        musicHttpRequests?.let{ musicHttpRequests ->
-                            item.url?.let{
-                                // HTTP通信を行うスレッドから情報をメインスレッドに取得すると，以下のコンストラクタに渡したメソッドが呼び出される．
-                                val musicDownloadHandler = MusicDownloadHandler(
-                                    handleMusicDownloadProgressUpdated,
-                                    handleMusicDownloadFailed,
-                                    handleMusicDownloadSuccess
-                                )
-                                // 実際にHTTPリクエストを送信して曲をダウンロードする．
-                                musicHttpRequests.requestDownloadMusic(it, musicDownloadHandler)
-                            }
-                        }
-                    }
+                    downloadMusic()
                 }
                 else{   //チェック入ってる(削除)時
                     // DBの中間テーブルから削除
@@ -261,14 +265,18 @@ class PlaylistEditActivity : AppCompatActivity() {
                 }
             }
 
-            //曲タップ時の処理
-            holder.constraintLayout.setOnClickListener {
-                onClickCheckBox()
-            }
-
             //チェックボックスタップ時の処理
             holder.checkBox.setOnClickListener {
-                onClickCheckBox()
+                if(!holder.checkBox.isChecked){  //チェック入ってない(登録解除)時
+                    // DBの中間テーブルから削除
+                    db3Dao.deleteMusic(playlist_id,item.backend_id)
+                }
+                else{   //チェック入ってる(登録)時
+                    // DBの中間テーブルへ登録
+                    db3Dao.insertMusic(playlist_id,item.backend_id)
+                    Log.d("debug", "element tapped in PlaylistEditActivity")
+                    downloadMusic()
+                }
             }
         }
 
