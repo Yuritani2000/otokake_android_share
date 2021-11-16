@@ -82,3 +82,28 @@ abstract class MiddleListDatabase : RoomDatabase(){
     }
 }
 
+//GameMusicデータベースの実装
+@Database(entities = [GameMusic::class],version = 1,exportSchema = false)
+abstract class GameMusicDatabase : RoomDatabase(){
+    abstract fun GameMusicDao(): GameMusicDao
+
+    companion object {
+
+        private var INSTANCE: GameMusicDatabase? = null
+
+        private val lock = Any()
+
+        fun getInstance(context: Context): GameMusicDatabase {
+            synchronized(lock) {
+                if (INSTANCE == null) {
+                    INSTANCE = Room.databaseBuilder(context.applicationContext,
+                        GameMusicDatabase::class.java, "GamuMusicDatabase")
+                        .allowMainThreadQueries()
+                        .build()
+                }
+                return INSTANCE!!
+            }
+        }
+    }
+}
+
