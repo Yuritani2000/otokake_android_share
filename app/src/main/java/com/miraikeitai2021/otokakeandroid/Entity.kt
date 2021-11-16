@@ -30,3 +30,14 @@ data class MiddleList(
     val middle_playlist_id: Int,    //プレイリスト番号
     val middle_backend_id: Int      //そのプレイリストに含まれてる曲のbackend_id
 )
+
+//ゲームモードの曲のEntity
+@Entity
+data class GameMusic(
+    @PrimaryKey(autoGenerate = true) val backend_id: Int=0, //主キー:バックエンドID(とりあえず自動生成ON)
+    val storage_id: Long?,  //ストレージID(NULL許容)
+    val title: String,     //曲名
+    val artist: String?,    //アーティスト名(NULL許容)
+    val url: String?         //URL(NULL許容)
+
+)
