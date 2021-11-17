@@ -17,6 +17,5 @@ class Example2Activity : AppCompatActivity() {
         mediaPlayer = MediaPlayer.create(this, CheckMusicUri().checkUri(storageId.toInt(), this.contentResolver))  //再生の準備
         mediaPlayer.isLooping = false   //ループ再生OFF
         mediaPlayer.start() //再生開始
-
     }
 }
