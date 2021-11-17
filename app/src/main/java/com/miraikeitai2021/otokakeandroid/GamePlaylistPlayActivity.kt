@@ -28,16 +28,16 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game_playlist_play)
 
-        val db4 = GameMusicDatabase.getInstance(this)
-        val db4Dao = db4.GameMusicDao()
+        val db2 = MusicDatabase.getInstance(this)
+        val db2Dao = db2.MusicDao()
 
-        var gameMusicDataList = db4Dao.getAll()
+        var musicDataList = db2Dao.getAll()
 
         var recyclerView3 = findViewById<RecyclerView>(R.id.recyclerView3)
         // LayoutManagerの設定
         recyclerView3.layoutManager = LinearLayoutManager(this)
         // CustomAdapterの生成と設定
-        recyclerView3.adapter = RecyclerListAdapter(gameMusicDataList, db4Dao)
+        recyclerView3.adapter = RecyclerListAdapter(musicDataList, db2Dao)
 
         //戻るボタンの表示
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -72,10 +72,10 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
 
                     // MusicInfoのプロパティは全てnullableなので，DB登録前にnullチェックを行う．
                     // 同時に，その曲がすでにDB上に存在するかを見て，二重に登録することを防ぐ．
-                    if (it.musicID != null && it.musicName != null && !db4Dao.getBackendId()
+                    if (it.musicID != null && it.musicName != null && !db2Dao.getBackendId()
                             .contains(it.musicID)
                     ) {
-                        db4Dao.insertHTTPMusic(
+                        db2Dao.insertHTTPMusic(
                             it.musicID,
                             it.musicName,
                             it.musicArtist,
@@ -85,18 +85,18 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                         Log.e("debug", "duplicated data insert")
                     }
 
-                    Log.d("debug", "db: ${db4Dao.getAll()}")
+                    Log.d("debug", "db: ${db2Dao.getAll()}")
                 }
 
                 // データベースに登録し，更新された曲一覧を取得する．
-                gameMusicDataList = db4Dao.getAll()
+                musicDataList = db2Dao.getAll()
 
                 // RecyclerViewの取得
                 recyclerView3 = findViewById(R.id.recyclerView3)
                 // LayoutManagerの設定
                 recyclerView3.layoutManager = LinearLayoutManager(this)
                 // CustomAdapterの生成と設定
-                recyclerView3.adapter = RecyclerListAdapter(gameMusicDataList, db4Dao)
+                recyclerView3.adapter = RecyclerListAdapter(musicDataList, db2Dao)
 
                 Log.d("debug", "コールバック呼ばれました")
             }
@@ -129,8 +129,8 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
     }
 
     private inner class RecyclerListAdapter(
-        private val musicDataList: List<GameMusic>,
-        private val db4Dao: GameMusicDao
+        private val musicDataList: List<Music>,
+        private val db2Dao: MusicDao
     ) :
         RecyclerView.Adapter<GamePlaylistPlayActivity.ViewHolder>() {
         override fun onCreateViewHolder(
@@ -181,10 +181,10 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                     val storageId = storageMusic.checkStorageId(this@GamePlaylistPlayActivity)
                     Log.d("debug", "new music storage id: $storageId")
                     if (storageId != -1L) {   // 保存した曲のストレージIDが返って来れば，それをDBへ登録する．
-                        val db4 = GameMusicDatabase.getInstance(this@GamePlaylistPlayActivity)
-                        val db4Dao = db4.GameMusicDao()
+                        val db2 = MusicDatabase.getInstance(this@GamePlaylistPlayActivity)
+                        val db2Dao = db2.MusicDao()
                         //ストレージIDをデータベースへ登録
-                        db4Dao.updateStorageId(item.backend_id, storageId)
+                        db2Dao.updateStorageId(item.backend_id, storageId)
                     } else {
                         Log.e("debug", "could not get ")
                     }
@@ -221,7 +221,7 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
             //曲タップ時の処理
             holder.constraintLayout.setOnClickListener {
                 // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
-                if (db4Dao.tap(item.backend_id) == null) {
+                if (db2Dao.tap(item.backend_id) == null) {
                     // 曲をダウンロードする際のダイアログを表示
                     musicDownloadDialog =
                         MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
@@ -243,10 +243,10 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                     }
                 }
                 else{
-                    Log.d("debug","${db4Dao.getAll()}")
+                    Log.d("debug","${db2Dao.getAll()}")
                     //インテント処理
                     val intent = Intent(this@GamePlaylistPlayActivity, Example2Activity::class.java)
-                    intent.putExtra("storageId",db4Dao.tap(item.backend_id))
+                    intent.putExtra("storageId",db2Dao.tap(item.backend_id))
                     startActivity(intent)
                 }
 

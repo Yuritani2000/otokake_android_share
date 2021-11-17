@@ -82,6 +82,10 @@ interface MusicDao{
     //ダウンロードした曲のストレージIDを登録する
     @Query("UPDATE Music SET storage_id = :storageId WHERE backend_id = :backendId")
     fun updateStorageId(backendId: Int,storageId: Long)
+
+    //タップした曲のストレージIDを出力
+    @Query("SELECT storage_id FROM Music WHERE backend_id = :backendId")
+    fun tap(backendId: Int): Long?
 }
 
 
