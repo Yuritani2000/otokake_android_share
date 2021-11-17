@@ -13,6 +13,7 @@ class PlayMusic(context: Context) {
     private lateinit var playBackParams: PlaybackParams
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
+    private val playMusicContinue = PlayMusicContinue()
 
     /**
      * 音楽を再生するメソッド
@@ -28,7 +29,7 @@ class PlayMusic(context: Context) {
                 mediaPlayer!!.setDataSource(myContext, musicUri)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
-                mediaPlayer!!.setOnCompletionListener{ stopMusic() }
+                mediaPlayer!!.setOnCompletionListener{ playMusicContinue.collBackPlayMusic(myContext, this) }
             } catch (e: IllegalArgumentException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {

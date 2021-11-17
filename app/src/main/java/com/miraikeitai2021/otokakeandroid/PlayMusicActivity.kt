@@ -33,8 +33,10 @@ class PlayMusicActivity : AppCompatActivity() {
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
+    //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
+    private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
+
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
@@ -54,6 +56,8 @@ class PlayMusicActivity : AppCompatActivity() {
 
         onCreateFootstepsMap()
 
+        val storageIdList: Array<Long> =
+            intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
         //************************************************************
         //保存用
 //        val strageMusic = StrageMusic()
@@ -103,7 +107,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************************************
 
-        binding.startButton.setOnClickListener { tappedStartButton() }
+        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
         binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
 
@@ -166,12 +170,13 @@ class PlayMusicActivity : AppCompatActivity() {
     /**
      * スタートボタンがクリックされたときの処理
      */
-    private fun tappedStartButton(){
-        //曲をスタートする
-        val text: TextView = findViewById(R.id.textView)
-        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
-        text.setText(contentUri.toString())
-        playMusic.startMusic(contentUri)
+    private fun tappedStartButton(storageIdList: Array<Long>){
+        playMusicContinue.orderMusic(storageIdList, this, playMusic)
+//        //曲をスタートする
+//        val text: TextView = findViewById(R.id.textView)
+//        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
+//        text.setText(contentUri.toString())
+//        playMusic.startMusic(contentUri)
         //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
@@ -189,8 +194,11 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     @SuppressLint("SetTextI18n")
     private fun tappedBluetoothButton(){
+        //ストレージIDを取得
+        val musicId = playMusicContinue.getStorageId()
+
         //歩調のBpmによって曲の再生速度を変更する
-        playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
+        playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
         val text: TextView = findViewById(R.id.textView)
         text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
