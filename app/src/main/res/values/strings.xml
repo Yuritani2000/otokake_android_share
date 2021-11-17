@@ -26,4 +26,12 @@
     <string name="change_footsteps">足音の変更</string>
     <string name="boyon">ボヨン</string>
     <string name="japanese_drum">和太鼓</string>
+    <string name="percent">%</string>
+    <string name="cancel">キャンセル</string>
+    <string name="downloading_music">曲をダウンロード中</string>
+    <string name="download_music_failed_title">曲のダウンロードに失敗</string>
+    <string name="download_music_failed_message">曲のダウンロードに失敗しました．もう一度お試しください．</string>
+    <string name="get_music_list_failed_title">曲一覧の取得に失敗</string>
+    <string name="get_music_list_failed_message">曲一覧の取得に失敗しました．もう一度お試しください．</string>
+    <string name="ok">OK</string>
 </resources>

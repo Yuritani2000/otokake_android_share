@@ -33,6 +33,7 @@ interface PlaylistDao {
     @Query("SELECT name FROM Playlist WHERE playlist_id = :playlist")
     fun getTitle(playlist: Int): String
 
+
 }
 
 //MusicのDao
@@ -69,7 +70,17 @@ interface MusicDao{
     @Query("SELECT storage_id FROM music WHERE backend_id = :backend")
     fun getStorageId(backend: Int): Long
 
+    //
+    @Query("SELECT backend_id From Music")
+    fun getBackendId(): Array<Int>
 
+    //HTTP通信で受け取った曲の登録
+    @Query("INSERT INTO Music (backend_id,title,artist,url) VALUES (:backend, :title, :artist, :url)")
+    fun insertHTTPMusic(backend: Int,title: String,artist: String?,url: String?)
+
+    //ダウンロードした曲のストレージIDを登録する
+    @Query("UPDATE Music SET storage_id = :storageId WHERE backend_id = :backendId")
+    fun updateStorageId(backendId: Int,storageId: Long)
 }
 
 

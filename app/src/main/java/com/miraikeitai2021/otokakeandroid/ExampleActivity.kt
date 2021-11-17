@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 
 class ExampleActivity : AppCompatActivity() {
@@ -16,16 +17,16 @@ class ExampleActivity : AppCompatActivity() {
 
         val storageIdList: Array<Long> = intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
 
-        /*
+
         for (i in storageIdList.indices){   //受け取り内容の確認
             Log.v("TAG","要素${i}:${storageIdList[i]}")
         }
-         */
+
 
         lateinit var mediaPlayer: MediaPlayer
 
         //1曲目の再生だけ
-        mediaPlayer = MediaPlayer.create(this, checkUri(this,storageIdList[0]))  //再生の準備
+        mediaPlayer = MediaPlayer.create(this, CheckMusicUri().checkUri(storageIdList[0].toInt(), this.contentResolver))  //再生の準備
         mediaPlayer.isLooping = false   //ループ再生OFF
         mediaPlayer.start() //再生開始
     }
