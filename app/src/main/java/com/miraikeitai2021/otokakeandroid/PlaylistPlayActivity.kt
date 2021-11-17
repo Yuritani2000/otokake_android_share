@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -115,6 +116,7 @@ class PlaylistPlayActivity : AppCompatActivity() {
                 var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
                 for (i in data.indices){    //バックエンドIDの配列からストレージIDの配列を取得
                     storageIdList += db2Dao.getStorageId(data[i])
+                    Log.d("debug", "storage id list 0: ${storageIdList[0]}")
                 }
 
                 //インテント処理

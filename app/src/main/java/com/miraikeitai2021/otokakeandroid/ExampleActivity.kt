@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -15,6 +16,7 @@ class ExampleActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play_music)
+
 
         val storageIdList: Array<Long> =
             intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
@@ -66,6 +68,7 @@ class ExampleActivity : AppCompatActivity() {
             MediaStore.Audio.Media.DISPLAY_NAME
         )
 
+
         //selection: filterでAudioFileのみのIDを得るように定義
         val selection = MediaStore.Audio.Media._ID + "=" + musicId.toString()
 
@@ -99,6 +102,7 @@ class ExampleActivity : AppCompatActivity() {
             }
         }
         return contentUri
+
     }
 /*
     //曲の再生

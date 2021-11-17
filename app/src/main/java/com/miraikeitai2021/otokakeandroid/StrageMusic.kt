@@ -8,10 +8,10 @@ import androidx.annotation.RequiresApi
 import java.io.FileOutputStream
 
 class StrageMusic {
-/**
- * ストレージに曲データを保存する関数
- * context: MainActivity（呼び出し元Activity)のContext
- */
+    /**
+     * ストレージに曲データを保存する関数
+     * context: MainActivity（呼び出し元Activity)のContext
+     */
 
     @RequiresApi(Build.VERSION_CODES.Q)
 
