@@ -11,7 +11,6 @@ import java.io.IOException
 class PlayMusic(context: Context) {
     private val myContext = context
     private var mediaPlayer: MediaPlayer? = null
-    private lateinit var playBackParams: PlaybackParams
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
     private val playMusicContinue = PlayMusicContinue()
@@ -28,6 +27,12 @@ class PlayMusic(context: Context) {
             try {
                 mediaPlayer = MediaPlayer()
                 mediaPlayer!!.setDataSource(myContext, musicUri)
+
+                val playBackParams = mediaPlayer!!.playbackParams
+                val speed = playBackParams.setSpeed(changedMusicSpeed)
+                Log.d("debug", "playbackParams instance: $speed")
+                mediaPlayer!!.setPlaybackParams(speed)
+
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
                 mediaPlayer!!.setOnCompletionListener{ playMusicContinue.collBackPlayMusic(myContext, this) }
@@ -64,7 +69,7 @@ class PlayMusic(context: Context) {
     fun changeSpeedMusic(runBpm: Float, orgMusicBpm: Float){
 
         if(mediaPlayer != null) {
-            playBackParams = PlaybackParams()
+            val playBackParams = mediaPlayer!!.playbackParams
 
             if(orgMusicBpm > 0.0f){
                 changedMusicSpeed = runBpm / orgMusicBpm
