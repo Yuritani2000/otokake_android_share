@@ -91,13 +91,16 @@ class StorageMusic {
         if(Environment.MEDIA_MOUNTED == state) {
             val fileOutputStream = FileOutputStream(file, true)
 
-            while (true) {
-                val data = inputStream.read()
-                if (data == -1) {
-                    break
-                }
-                fileOutputStream.write(data)
-            }
+            val musicByteArray = inputStream.readBytes()
+            fileOutputStream.write(musicByteArray)
+
+//            while (true) {
+//                val data = inputStream.read()
+//                if (data == -1) {
+//                    break
+//                }
+//                fileOutputStream.write(data)
+//            }
             inputStream.close()
             fileOutputStream.close()
         }
