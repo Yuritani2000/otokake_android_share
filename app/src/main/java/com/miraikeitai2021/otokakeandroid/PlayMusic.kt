@@ -29,7 +29,7 @@ class PlayMusic(context: Context) {
                 mediaPlayer!!.setDataSource(myContext, musicUri)
 
                 val playBackParams = mediaPlayer!!.playbackParams
-                val speed = playBackParams.setSpeed(changedMusicSpeed)
+                val speed = playBackParams.setSpeed(1.0001f)
                 Log.d("debug", "playbackParams instance: $speed")
                 mediaPlayer!!.setPlaybackParams(speed)
 
