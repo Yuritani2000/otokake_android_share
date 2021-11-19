@@ -36,6 +36,7 @@ class PlayMusicActivity : AppCompatActivity() {
     //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
     private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
+    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用する．
 
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
@@ -135,6 +136,10 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
         }
 
+        //外部ストレージへの使用許可リクエスト
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), PERMISSION_WRITE_EX_STR)
+        }
 
         val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
         searchLeftDeviceButton.setOnClickListener {
@@ -234,6 +239,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
     /**
      * 位置情報の有効化をユーザーに求めた後に呼び出される．
+     * 外部ストレージへのアクセス許可をユーザに求めた後に呼び出される.
      */
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -247,6 +253,10 @@ class PlayMusicActivity : AppCompatActivity() {
                     Toast.makeText(this, R.string.access_fine_location_denied_warning, Toast.LENGTH_SHORT).show()
                     finish()
                 }
+            }
+            PERMISSION_WRITE_EX_STR -> if(grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this,"外部ストレージへのアクセスを許可しない場合、この機能を使用できません。", Toast.LENGTH_LONG).show()
+                finish()
             }
         }
     }
