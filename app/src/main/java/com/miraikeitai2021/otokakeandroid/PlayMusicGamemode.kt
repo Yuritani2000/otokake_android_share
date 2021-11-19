@@ -7,8 +7,9 @@ import android.net.Uri
 import android.util.Log
 import java.io.IOException
 
-class PlayMusicGamemode(context: Context) {
+class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGamemodeActivity) {
     private val myContext = context
+    private val myPlayMusicGamemodeActivity = playMusicGamemodeActivity
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var playBackParams: PlaybackParams
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
@@ -28,7 +29,10 @@ class PlayMusicGamemode(context: Context) {
                 mediaPlayer!!.setDataSource(myContext, musicUri)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
-                mediaPlayer!!.setOnCompletionListener{ stopMusic() }
+                mediaPlayer!!.setOnCompletionListener{
+                    stopMusic()
+                    myPlayMusicGamemodeActivity.displayScore()
+                }
             } catch (e: IllegalArgumentException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {

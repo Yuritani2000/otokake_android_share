@@ -31,7 +31,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
-    private val playMusicGamemode: PlayMusicGamemode = PlayMusicGamemode(this) //曲を再生するクラス
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
     private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用
     private var storageId: Long = -1 //ストレージIdの初期値
@@ -44,6 +43,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
 
     private lateinit var binding: ActivityPlayMusicGamemodeBinding
+
+    private val playMusicGamemode: PlayMusicGamemode = PlayMusicGamemode(this, this) //曲を再生するクラス
 
     // 左足デバイスと通信してデータを受け取るスレッド
     private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
