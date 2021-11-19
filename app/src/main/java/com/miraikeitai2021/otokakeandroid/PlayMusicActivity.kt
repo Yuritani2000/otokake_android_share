@@ -38,6 +38,7 @@ class PlayMusicActivity : AppCompatActivity() {
     //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
     private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
+    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用する．
 
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
@@ -142,7 +143,6 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
         }
 
-
         val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
         searchLeftDeviceButton.setOnClickListener {
             bluetoothAdapter?.let{
@@ -209,16 +209,18 @@ class PlayMusicActivity : AppCompatActivity() {
     private fun tappedBluetoothButton(){
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ動作する
         if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
-            //ストレージIDを取得
-            val musicId = playMusicContinue.getStorageId()
+          if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+              //ストレージIDを取得
+              val musicId = playMusicContinue.getStorageId()
 
-            //歩調のBpmによって曲の再生速度を変更する
-            playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+              //歩調のBpmによって曲の再生速度を変更する
+              playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
-            val text: TextView = findViewById(R.id.textView)
-            text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                    "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                    "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+              val text: TextView = findViewById(R.id.textView)
+              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
+                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
+                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+          }
         }
     }
 
@@ -250,6 +252,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
     /**
      * 位置情報の有効化をユーザーに求めた後に呼び出される．
+     * 外部ストレージへのアクセス許可をユーザに求めた後に呼び出される.
      */
     override fun onRequestPermissionsResult(
         requestCode: Int,
