@@ -67,7 +67,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         }
 
         //読み込みボタンクリック時(将来的に削除予定)
-        val inputButton = findViewById<Button>(R.id.input)
+        val inputButton = findViewById<Button>(R.id.input2)
         inputButton.setOnClickListener {
 
             // 曲のダウンロード成功後に呼ばれるコールバック関数．引数musicListResponseには，曲のデータMusicInfoが入ったListが渡ってくる．

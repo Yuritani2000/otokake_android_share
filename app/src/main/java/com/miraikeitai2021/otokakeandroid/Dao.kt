@@ -156,4 +156,11 @@ interface GameMusicDao{
     @Query("INSERT INTO GameMusic (backend_id,title,artist,url) VALUES (:backend, :title, :artist, :url)")
     fun insertHTTPMusic(backend: Int,title: String,artist: String?,url: String?)
 
+    //ダウンロードした曲のストレージIDを登録する
+    @Query("UPDATE GameMusic SET storage_id = :storageId WHERE backend_id = :backendId")
+    fun updateStorageId(backendId: Int,storageId: Long)
+
+    //タップした曲のストレージIDを出力
+    @Query("SELECT storage_id FROM GameMusic WHERE backend_id = :backendId")
+    fun tap(backendId: Int): Long?
 }
