@@ -21,6 +21,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
+            android:name=".DisplayScoreActivity"
+            android:exported="true" />
+        <activity
             android:name=".PlayMusicGamemodeActivity"
             android:exported="true" />
         <activity
@@ -43,7 +46,7 @@
             android:exported="true" />
         <activity
             android:name=".PlaylistActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ExampleActivity"
             android:exported="true" />
@@ -53,7 +56,7 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".GamePlaylistPlayActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true" />
