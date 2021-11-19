@@ -199,16 +199,18 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     @SuppressLint("SetTextI18n")
     private fun tappedBluetoothButton(){
-        //ストレージIDを取得
-        val musicId = playMusicContinue.getStorageId()
+        if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+            //ストレージIDを取得
+            val musicId = playMusicContinue.getStorageId()
 
-        //歩調のBpmによって曲の再生速度を変更する
-        playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+            //歩調のBpmによって曲の再生速度を変更する
+            playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
-        val text: TextView = findViewById(R.id.textView)
-        text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+            val text: TextView = findViewById(R.id.textView)
+            text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
+                    "runBpm: ${checkRunBpm.getRunBpm()}  " +
+                    "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+        }
     }
 
     /**

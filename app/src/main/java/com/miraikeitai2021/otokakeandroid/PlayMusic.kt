@@ -14,6 +14,7 @@ class PlayMusic(context: Context) {
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
     private val playMusicContinue = PlayMusicContinue()
+    private lateinit var playBackParams: PlaybackParams //変更箇所 最初に宣言して, 32行目で値を入れる．その後33行目，83行目で同じものを使用する．
 
     /**
      * 音楽を再生するメソッド
@@ -28,8 +29,8 @@ class PlayMusic(context: Context) {
                 mediaPlayer = MediaPlayer()
                 mediaPlayer!!.setDataSource(myContext, musicUri)
 
-                val playBackParams = mediaPlayer!!.playbackParams
-                val speed = playBackParams.setSpeed(1.0001f)
+                playBackParams = mediaPlayer!!.playbackParams //変更箇所
+                val speed = playBackParams.setSpeed(1.0001f) //変更箇所(85行目の方はそのまま)
                 Log.d("debug", "playbackParams instance: $speed")
                 mediaPlayer!!.setPlaybackParams(speed)
 
@@ -69,8 +70,6 @@ class PlayMusic(context: Context) {
     fun changeSpeedMusic(runBpm: Float, orgMusicBpm: Float){
 
         if(mediaPlayer != null) {
-            val playBackParams = mediaPlayer!!.playbackParams
-
             if(orgMusicBpm > 0.0f){
                 changedMusicSpeed = runBpm / orgMusicBpm
             }else{
