@@ -223,6 +223,9 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         }else{
             pointArray[2] += 1
         }
+        Log.d("debug", "pointArray[1]: ${pointArray[0]}")
+        Log.d("debug", "pointArray[2]: ${pointArray[1]}")
+        Log.d("debug", "pointArray[3]: ${pointArray[2]}")
 
 
 
@@ -459,7 +462,18 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     }
 
     fun displayScore(){
+        Log.d("debug", "displayScore")
         val intent = Intent(this@PlayMusicGamemodeActivity,DisplayScoreActivity::class.java)
         intent.putExtra("pointArray", pointArray)
+        startActivity(intent)
+    }
+
+    fun resetScore(){
+        pointArray[0] = 0
+        pointArray[1] = 0
+        pointArray[2] = 0
+        Log.d("debug", "pointArray[1]: ${pointArray[0]}")
+        Log.d("debug", "pointArray[2]: ${pointArray[1]}")
+        Log.d("debug", "pointArray[3]: ${pointArray[2]}")
     }
 }

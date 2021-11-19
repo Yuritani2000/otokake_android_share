@@ -29,10 +29,8 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
                 mediaPlayer!!.setDataSource(myContext, musicUri)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
-                mediaPlayer!!.setOnCompletionListener{
-                    stopMusic()
-                    myPlayMusicGamemodeActivity.displayScore()
-                }
+                Log.d("debug", "startMusic")
+                mediaPlayer!!.setOnCompletionListener{ stopMusic() }
             } catch (e: IllegalArgumentException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {
@@ -49,6 +47,7 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
     fun stopMusic(){
         //歩調のbpm情報をリセット
         if(mediaPlayer != null) {
+            Log.d("debug", "stopMusic")
             checkRunBpm.resetRunBpm()
             //Toast.makeText(myContext, "${checkRunBpm.getRunBpm()}", Toast.LENGTH_LONG).show()
 
@@ -56,6 +55,8 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
             mediaPlayer!!.reset()
             mediaPlayer!!.release()
             mediaPlayer = null
+            myPlayMusicGamemodeActivity.displayScore()
+            myPlayMusicGamemodeActivity.resetScore()
         }
     }
 

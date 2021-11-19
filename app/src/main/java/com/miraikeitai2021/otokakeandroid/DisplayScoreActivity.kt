@@ -24,7 +24,7 @@ class DisplayScoreActivity : AppCompatActivity() {
             val normalPoint = it[1]
             val badPoint = it[2]
 
-            val score = bestPoint * 5000 + normalPoint * 2000
+            val score = bestPoint * 500 + normalPoint * 200
 
             binding.scoreTextView.text = "score: $score"
             binding.bestScoreTextView.text = "best: $bestPoint"
