@@ -7,6 +7,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class StorageMusic {
     /**
@@ -22,7 +24,10 @@ class StorageMusic {
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
             //APIレベル28以前の機種の場合の処理
-            val uriFileName = "music" + backendId.toString() + ".mp3"
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS")
+            val date = Date(System.currentTimeMillis())
+            val timeStamp = dateFormat.format(date)
+            val uriFileName = "music" + backendId.toString() + "_" + timeStamp + ".mp3"
             storageInMusicLessAPI28(context, inputStream, musicFileName, uriFileName)
         }else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //APIレベル29以降の機種の場合の処理
