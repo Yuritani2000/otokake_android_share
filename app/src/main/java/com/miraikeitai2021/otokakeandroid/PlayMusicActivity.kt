@@ -28,6 +28,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
 
+private const val REQUEST_READ_EXTERNAL_STORAGE = 1001
+
 class PlayMusicActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
@@ -136,9 +138,9 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
         }
 
-        //外部ストレージへの使用許可リクエスト
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), PERMISSION_WRITE_EX_STR)
+        // ストレージへのアクセスリクエスト(APIレベル28(Android 9)以下を対象)
+        if(Build.VERSION.SDK_INT <= 28 && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
         }
 
         val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
@@ -176,7 +178,10 @@ class PlayMusicActivity : AppCompatActivity() {
      * スタートボタンがクリックされたときの処理
      */
     private fun tappedStartButton(storageIdList: Array<Long>){
-        playMusicContinue.orderMusic(storageIdList, this, playMusic)
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+            playMusicContinue.orderMusic(storageIdList, this, playMusic)
+        }
 //        //曲をスタートする
 //        val text: TextView = findViewById(R.id.textView)
 //        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
@@ -190,7 +195,10 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     private fun tappedStopButton(){
         //曲をストップする
-        playMusic.stopMusic()
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を停止
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+            playMusic.stopMusic()
+        }
     }
 
     /**
@@ -199,17 +207,20 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     @SuppressLint("SetTextI18n")
     private fun tappedBluetoothButton(){
-        if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
-            //ストレージIDを取得
-            val musicId = playMusicContinue.getStorageId()
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ動作する
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+          if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+              //ストレージIDを取得
+              val musicId = playMusicContinue.getStorageId()
 
-            //歩調のBpmによって曲の再生速度を変更する
-            playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+              //歩調のBpmによって曲の再生速度を変更する
+              playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
-            val text: TextView = findViewById(R.id.textView)
-            text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                    "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                    "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+              val text: TextView = findViewById(R.id.textView)
+              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
+                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
+                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+          }
         }
     }
 
@@ -256,9 +267,11 @@ class PlayMusicActivity : AppCompatActivity() {
                     finish()
                 }
             }
-            PERMISSION_WRITE_EX_STR -> if(grantResults[0] != PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(this,"外部ストレージへのアクセスを許可しない場合、この機能を使用できません。", Toast.LENGTH_LONG).show()
-                finish()
+            REQUEST_READ_EXTERNAL_STORAGE -> {
+                if((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                    Toast.makeText(this, R.string.read_external_storage_denied_warning, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
             }
         }
     }

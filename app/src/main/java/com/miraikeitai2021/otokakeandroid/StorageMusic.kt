@@ -7,6 +7,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class StorageMusic {
     /**
@@ -17,13 +19,17 @@ class StorageMusic {
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      * musicFileName: 保存したい音楽ファイルの名前
      */
-    fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int, musicFileName: String){
+    fun storageInMusic(context: Context, inputStream: InputStream, backendId:Int){
+
+        //APIレベル28以前の機種の場合の処理
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS")
+        val date = Date(System.currentTimeMillis())
+        val timeStamp = dateFormat.format(date)
+        val musicFileName = "otokake_" + backendId.toString() + "_" + timeStamp + ".mp3"
 
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
-            //APIレベル28以前の機種の場合の処理
-            val uriFileName = "music" + backendId.toString() + ".mp3"
-            storageInMusicLessAPI28(context, inputStream, musicFileName, uriFileName)
+            storageInMusicLessAPI28(context, inputStream, musicFileName)
         }else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //APIレベル29以降の機種の場合の処理
             storageInMusicMoreAPI29(context, inputStream, musicFileName)
@@ -81,23 +87,18 @@ class StorageMusic {
      * backendId: 保存したい音楽ファイルの一意なバックエンドId
      * musicFileName: 保存したい音楽ファイルの名前
      */
-    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, musicFileName: String, uriFileName: String){
+    private fun storageInMusicLessAPI28(context: Context, inputStream: InputStream, musicFileName: String){
         //文字列パスを作製
         val path = context.getExternalFilesDir(Environment.DIRECTORY_MUSIC).toString()
-        val file = path + "/" + uriFileName
+        val file = "$path/$musicFileName"
 
         //外部ストレージに直接inputStreamの音楽データをコピー
         val state = Environment.getExternalStorageState()
         if(Environment.MEDIA_MOUNTED == state) {
             val fileOutputStream = FileOutputStream(file, true)
 
-            while (true) {
-                val data = inputStream.read()
-                if (data == -1) {
-                    break
-                }
-                fileOutputStream.write(data)
-            }
+            var musicByteArray = inputStream.readBytes()
+            fileOutputStream.write(musicByteArray)
             inputStream.close()
             fileOutputStream.close()
         }
