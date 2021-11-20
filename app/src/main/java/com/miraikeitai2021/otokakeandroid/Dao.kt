@@ -132,39 +132,3 @@ interface MiddleListDao{
     @Query("SELECT middle_backend_id FROM MiddleList WHERE middle_playlist_id = :playlist AND middle_backend_id >= :backend ORDER BY middle_backend_id ASC")
     fun tap(playlist: Int,backend: Int): Array<Int>
 }
-
-//GameMusicのDao
-@Dao
-interface GameMusicDao{
-    //全要素取得
-    @Query("SELECT * FROM GameMusic")
-    fun getAll(): List<GameMusic>
-
-    //追加
-    @Insert
-    fun insert(user : GameMusic)
-
-    //更新
-    @Update
-    fun update(user : GameMusic)
-
-    //曲の登録
-    @Query("INSERT INTO GameMusic (storage_id,title,artist) VALUES (:a,:b,:c)")
-    fun insertMusic(a: Long,b: String,c: String)
-
-    //バックエンドID一覧の取得
-    @Query("SELECT backend_id From GameMusic")
-    fun getBackendId(): Array<Int>
-
-    //HTTP通信で受け取った曲の登録
-    @Query("INSERT INTO GameMusic (backend_id,title,artist,url) VALUES (:backend, :title, :artist, :url)")
-    fun insertHTTPMusic(backend: Int,title: String,artist: String?,url: String?)
-
-    //ダウンロードした曲のストレージIDを登録する
-    @Query("UPDATE GameMusic SET storage_id = :storageId WHERE backend_id = :backendId")
-    fun updateStorageId(backendId: Int,storageId: Long)
-
-    //タップした曲のストレージIDを出力
-    @Query("SELECT storage_id FROM GameMusic WHERE backend_id = :backendId")
-    fun tap(backendId: Int): Long?
-}
