@@ -5,6 +5,8 @@ import android.media.MediaPlayer
 import android.media.MediaPlayer.OnPreparedListener
 import android.media.PlaybackParams
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import java.io.IOException
 
@@ -30,10 +32,15 @@ class PlayMusic(context: Context) {
                 mediaPlayer!!.setDataSource(myContext, musicUri)
 
                 playBackParams = mediaPlayer!!.playbackParams //変更箇所
-                val speed = playBackParams.setSpeed(1.0001f) //変更箇所(85行目の方はそのまま)
+                var speed = playBackParams.setSpeed(2.0f) //変更箇所(85行目の方はそのまま)
                 Log.d("debug", "playbackParams instance: $speed")
-                mediaPlayer!!.setPlaybackParams(speed)
+                mediaPlayer!!.playbackParams = speed
 
+                Handler(Looper.getMainLooper()).postDelayed({
+                    speed = playBackParams.setSpeed(1.0000f) //変更箇所(85行目の方はそのまま)
+                    Log.d("debug", "playbackParams instance: $speed")
+                    mediaPlayer!!.playbackParams = speed
+                }, 10)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
                 mediaPlayer!!.setOnCompletionListener{ playMusicContinue.collBackPlayMusic(myContext, this) }
@@ -41,6 +48,7 @@ class PlayMusic(context: Context) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
+                Log.e("debug", e.toString())
             } catch (e: IOException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             }
@@ -82,7 +90,7 @@ class PlayMusic(context: Context) {
             Log.d("debug", "changedMusicSpeed: $changedMusicSpeed")
             val speed = playBackParams.setSpeed(changedMusicSpeed)
             Log.d("debug", "playbackParams instance: $speed")
-            mediaPlayer!!.setPlaybackParams(speed)
+            mediaPlayer!!.playbackParams = speed
             /*
             Toast.makeText(
                 myContext,
