@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -122,6 +123,14 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
             musicHttpRequests.requestGetMusicList(getMusicListHandler)
         }
     }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) { //戻るボタンクリック時
+            finish()
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
 
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val musicTitle: TextView = view.findViewById(R.id.gameMusicTitle)
