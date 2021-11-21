@@ -39,15 +39,19 @@ class PlayMusicContinue() {
      * ここで再度startMusicを呼ぶことでループ処理をしている．
      * 配列の最後まで進んだ時はstopMusicのみを呼んでループを終了する．
      */
-    fun collBackPlayMusic(context: Context, playMusic: PlayMusic){
+    fun callBackPlayMusic(context: Context, playMusic: PlayMusic){
         order += 1
         if(order >= listSize){
-            playMusic.stopMusic()
+            if(playMusic.getMediaPlayer() != null){
+                playMusic.stopMusic()
+            }
         }else{
             if(playMusic.getMediaPlayer() != null){
                 playMusic.stopMusic()
             }
-            playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
+            if(playMusic.getMediaPlayer() == null){
+                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
+            }
         }
     }
 

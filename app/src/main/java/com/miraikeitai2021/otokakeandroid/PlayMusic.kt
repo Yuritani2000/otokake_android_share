@@ -36,7 +36,7 @@ class PlayMusic(context: Context) {
 
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
-                mediaPlayer!!.setOnCompletionListener{ playMusicContinue.collBackPlayMusic(myContext, this) }
+                mediaPlayer!!.setOnCompletionListener{ playMusicContinue.callBackPlayMusic(myContext, this) }
             } catch (e: IllegalArgumentException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {
