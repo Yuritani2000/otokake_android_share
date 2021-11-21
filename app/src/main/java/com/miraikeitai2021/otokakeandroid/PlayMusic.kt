@@ -91,6 +91,11 @@ class PlayMusic(context: Context) {
             val speed = playBackParams.setSpeed(changedMusicSpeed)
             Log.d("debug", "playbackParams instance: $speed")
             mediaPlayer!!.playbackParams = speed
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.d("debug", "playbackParams instance: $speed")
+                mediaPlayer!!.playbackParams = speed
+            }, 10)
             /*
             Toast.makeText(
                 myContext,
