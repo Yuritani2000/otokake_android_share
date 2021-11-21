@@ -48,7 +48,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         // LayoutManagerの設定
         recyclerView2.layoutManager = LinearLayoutManager(this)
         // CustomAdapterの生成と設定
-        recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
+        recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId,db2Dao)
 
         //戻るボタンの表示
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -97,7 +97,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 // LayoutManagerの設定
                 recyclerView2.layoutManager = LinearLayoutManager(this)
                 // CustomAdapterの生成と設定
-                recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId)
+                recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId,db2Dao)
 
                 Log.d("debug", "コールバック呼ばれました")
             }
@@ -138,7 +138,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         val constraintLayout: ConstraintLayout = view.findViewById(R.id.editContstraintLayout)
     }
 
-    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, val defaultList: List<Int>, private val db3Dao: MiddleListDao,private val playlist_id: Int):
+    private inner class RecyclerListAdapter(private val musicDataList: List<Music>, val defaultList: List<Int>, private val db3Dao: MiddleListDao,private val playlist_id: Int,private val db2Dao: MusicDao):
         RecyclerView.Adapter<PlaylistEditActivity.ViewHolder>() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -228,7 +228,7 @@ class PlaylistEditActivity : AppCompatActivity() {
 
             val downloadMusic = fun(){
                 // 曲がまだダウンロードされていない(item.storage_idがnull)の時は，タップされた曲をAmazon S3からダウンロードする．
-                if(item.storage_id == null){
+                if(db2Dao.tap(item.backend_id) == null){
                     // 曲をダウンロードする際のダイアログを表示
                     musicDownloadDialog = MusicDownloadDialog(onClickMusicDownloadDialogCancelButton)
                     musicDownloadDialog?.show(supportFragmentManager, "music_downloading_dialog")

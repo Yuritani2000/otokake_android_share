@@ -21,17 +21,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
-            android:name=".DisplayScoreActivity"
-            android:exported="true" />
-        <activity
-            android:name=".PlayMusicGamemodeActivity"
-            android:exported="true" />
-        <activity
             android:name=".MainMenuActivity"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -39,13 +32,20 @@
             android:name=".Example2Activity"
             android:exported="false" />
         <activity
+            android:name=".DisplayScoreActivity"
+            android:exported="true" />
+        <activity
+            android:name=".PlayMusicGamemodeActivity"
+            android:exported="true" />
+        <activity
+            android:name=".PlaylistActivity"
+            android:exported="true" >
+        </activity>
+        <activity
             android:name=".PlaylistPlayActivity"
             android:exported="false" />
         <activity
             android:name=".PlaylistEditActivity"
-            android:exported="true" />
-        <activity
-            android:name=".PlaylistActivity"
             android:exported="true" />
         <activity
             android:name=".ExampleActivity"
