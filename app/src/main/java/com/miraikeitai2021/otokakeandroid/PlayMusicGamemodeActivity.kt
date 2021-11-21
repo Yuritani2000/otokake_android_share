@@ -27,6 +27,8 @@ import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicGamemodeBinding
 import kotlin.math.abs
 
+private const val REQUEST_DISPLAY_SCORE_ACTIVITY = 1000
+
 class PlayMusicGamemodeActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
@@ -246,6 +248,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
 
     /**
      * 本体のBluetoothの有効化をユーザーに求めた後に呼び出される．
+     * また，点数表示画面から処理が戻ってきた際にも呼ばれ，その際にはそのままこのActivityを閉じて曲選択画面に戻る
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -260,6 +263,10 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                         finish()
                     }
                 }
+            }
+            REQUEST_DISPLAY_SCORE_ACTIVITY -> {
+                // 点数表示た面から戻ってきた際は，そのままActivityを閉じる．
+                finish()
             }
         }
     }
@@ -465,7 +472,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         Log.d("debug", "displayScore")
         val intent = Intent(this@PlayMusicGamemodeActivity,DisplayScoreActivity::class.java)
         intent.putExtra("pointArray", pointArray)
-        startActivity(intent)
+        startActivityForResult(intent, REQUEST_DISPLAY_SCORE_ACTIVITY)
     }
 
     fun resetScore(){
