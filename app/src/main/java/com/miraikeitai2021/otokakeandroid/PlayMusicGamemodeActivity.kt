@@ -27,7 +27,10 @@ import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicGamemodeBinding
 import kotlin.math.abs
 
-private const val REQUEST_DISPLAY_SCORE_ACTIVITY = 1000
+/**
+ * 将来的にここ変えないといけない．リクエストコードは一緒のファイルにまとめておかないと重複に気付かない．
+ */
+private const val REQUEST_DISPLAY_SCORE_ACTIVITY = 1002
 
 class PlayMusicGamemodeActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス

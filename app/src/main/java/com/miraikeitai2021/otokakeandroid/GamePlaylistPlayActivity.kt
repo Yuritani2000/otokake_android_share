@@ -253,7 +253,7 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                 else{
                     Log.d("debug","${db2Dao.getAll()}")
                     //インテント処理
-                    val intent = Intent(this@GamePlaylistPlayActivity, Example2Activity::class.java)
+                    val intent = Intent(this@GamePlaylistPlayActivity, PlayMusicGamemodeActivity::class.java)
                     intent.putExtra("storageId",db2Dao.tap(item.backend_id))
                     startActivity(intent)
                 }
