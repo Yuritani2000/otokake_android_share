@@ -34,5 +34,9 @@
     <string name="get_music_list_failed_title">曲一覧の取得に失敗</string>
     <string name="get_music_list_failed_message">曲一覧の取得に失敗しました．もう一度お試しください．</string>
     <string name="ok">OK</string>
+    <string name="score_string">score</string>
+    <string name="best_score_string">score_best</string>
+    <string name="normal_score_string">score_normal</string>
+    <string name="bad_score_string">score_bad</string>
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
 </resources>

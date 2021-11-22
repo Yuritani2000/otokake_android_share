@@ -55,6 +55,7 @@ interface MusicDao{
     @Delete
     fun delete(user : Music)
 
+    //曲の登録
     @Query("INSERT INTO Music (storage_id,title,artist) VALUES (:a,:b,:c)")
     fun insertMusic(a: Long,b: String,c: String)
 
@@ -70,7 +71,7 @@ interface MusicDao{
     @Query("SELECT storage_id FROM music WHERE backend_id = :backend")
     fun getStorageId(backend: Int): Long
 
-    //
+    //バックエンドID一覧の取得
     @Query("SELECT backend_id From Music")
     fun getBackendId(): Array<Int>
 
@@ -81,6 +82,10 @@ interface MusicDao{
     //ダウンロードした曲のストレージIDを登録する
     @Query("UPDATE Music SET storage_id = :storageId WHERE backend_id = :backendId")
     fun updateStorageId(backendId: Int,storageId: Long)
+
+    //タップした曲のストレージIDを出力
+    @Query("SELECT storage_id FROM Music WHERE backend_id = :backendId")
+    fun tap(backendId: Int): Long?
 }
 
 

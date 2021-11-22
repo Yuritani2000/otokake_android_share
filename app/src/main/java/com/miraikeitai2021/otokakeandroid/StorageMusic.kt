@@ -29,6 +29,7 @@ class StorageMusic {
 
         //保存用
         if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
+            //APIレベル28以前の機種の場合の処理
             storageInMusicLessAPI28(context, inputStream, musicFileName)
         }else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //APIレベル29以降の機種の場合の処理
