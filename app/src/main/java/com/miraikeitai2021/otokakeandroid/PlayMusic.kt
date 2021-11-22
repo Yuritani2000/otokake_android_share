@@ -2,17 +2,21 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.media.MediaPlayer.OnPreparedListener
 import android.media.PlaybackParams
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import java.io.IOException
 
 class PlayMusic(context: Context) {
     private val myContext = context
     private var mediaPlayer: MediaPlayer? = null
-    private lateinit var playBackParams: PlaybackParams
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
+    private val playMusicContinue = PlayMusicContinue()
+    private lateinit var playBackParams: PlaybackParams //変更箇所 最初に宣言して, 32行目で値を入れる．その後33行目，83行目で同じものを使用する．
 
     /**
      * 音楽を再生するメソッド
@@ -26,13 +30,25 @@ class PlayMusic(context: Context) {
             try {
                 mediaPlayer = MediaPlayer()
                 mediaPlayer!!.setDataSource(myContext, musicUri)
+
+                playBackParams = mediaPlayer!!.playbackParams //変更箇所
+                var speed = playBackParams.setSpeed(2.0f) //変更箇所(85行目の方はそのまま)
+                Log.d("debug", "playbackParams instance: $speed")
+                mediaPlayer!!.playbackParams = speed
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    speed = playBackParams.setSpeed(1.0000f) //変更箇所(85行目の方はそのまま)
+                    Log.d("debug", "playbackParams instance: $speed")
+                    mediaPlayer!!.playbackParams = speed
+                }, 10)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
-                mediaPlayer!!.setOnCompletionListener{ stopMusic() }
+                mediaPlayer!!.setOnCompletionListener{ playMusicContinue.callBackPlayMusic(myContext, this) }
             } catch (e: IllegalArgumentException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             } catch (e: IllegalStateException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
+                Log.e("debug", e.toString())
             } catch (e: IOException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             }
@@ -62,8 +78,6 @@ class PlayMusic(context: Context) {
     fun changeSpeedMusic(runBpm: Float, orgMusicBpm: Float){
 
         if(mediaPlayer != null) {
-            playBackParams = PlaybackParams()
-
             if(orgMusicBpm > 0.0f){
                 changedMusicSpeed = runBpm / orgMusicBpm
             }else{
@@ -76,7 +90,12 @@ class PlayMusic(context: Context) {
             Log.d("debug", "changedMusicSpeed: $changedMusicSpeed")
             val speed = playBackParams.setSpeed(changedMusicSpeed)
             Log.d("debug", "playbackParams instance: $speed")
-            mediaPlayer!!.setPlaybackParams(speed)
+            mediaPlayer!!.playbackParams = speed
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.d("debug", "playbackParams instance: $speed")
+                mediaPlayer!!.playbackParams = speed
+            }, 10)
             /*
             Toast.makeText(
                 myContext,
@@ -85,6 +104,7 @@ class PlayMusic(context: Context) {
             ).show()
 
              */
+
         }
 
 

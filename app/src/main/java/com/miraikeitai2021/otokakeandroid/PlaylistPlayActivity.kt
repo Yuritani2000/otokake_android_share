@@ -120,7 +120,7 @@ class PlaylistPlayActivity : AppCompatActivity() {
                 }
 
                 //インテント処理
-                val intent = Intent(this@PlaylistPlayActivity, ExampleActivity::class.java)
+                val intent = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
                 intent.putExtra("storageIdList",storageIdList)
                 startActivity(intent)
             }
