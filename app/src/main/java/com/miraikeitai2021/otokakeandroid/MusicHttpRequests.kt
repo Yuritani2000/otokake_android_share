@@ -40,7 +40,7 @@ class MusicHttpRequests(){
     /**
      *  曲一覧の取得先となるURL.サーバが本番のものになり次第変更する必要がある．
      */
-    private val url = "http://172.20.10.3:8080/getMusicInfoAll"
+    private val url = "http://192.168.2.107:8080/getMusicInfoAll"
 
     /**曲がダウンロードされている時は，この中にCancellableRequestのオブジェクトが入る．*
       */
