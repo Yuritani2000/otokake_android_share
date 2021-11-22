@@ -259,7 +259,7 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
                 gap1[1] = sensorValue1
 
                 // 圧力値(低いほど高い)が3072以上，かつ，圧力の減少幅が-500以上であった場合は，足音を鳴らす信号をメインスレッドに送信する．
-                if(gap1[0] >= 3072 && (gap1[1] - gap1[0]) <= -500 ){
+                if(gap1[0] in 1500..4095 && (gap1[1] - gap1[0]) <= -500 && gap1[1] in 0..1000){
                     Log.d("debug", "gap[0]: ${gap1[0]}, gap[1]: ${gap1[1]}")
                     val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                     footOnTheGroundMsg.sendToTarget()

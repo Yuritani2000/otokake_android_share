@@ -178,8 +178,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                     storageMusic.storageInMusic(
                         this@PlaylistEditActivity,
                         inputStream,
-                        item.backend_id,
-                        "otokake_${item.backend_id}.mp3"
+                        item.backend_id
                     )
 
                     // 保存した曲のストレージIDを保存する．

@@ -28,13 +28,18 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
 
+private const val REQUEST_READ_EXTERNAL_STORAGE = 1001
+
 class PlayMusicActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
+    //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
+    private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
+    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用する．
+
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
@@ -54,6 +59,8 @@ class PlayMusicActivity : AppCompatActivity() {
 
         onCreateFootstepsMap()
 
+        val storageIdList: Array<Long> =
+            intent.getSerializableExtra("storageIdList") as Array<Long> //インテント元から配列を取得
         //************************************************************
         //保存用
 //        val strageMusic = StrageMusic()
@@ -103,7 +110,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************************************
 
-        binding.startButton.setOnClickListener { tappedStartButton() }
+        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
         binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
 
@@ -131,6 +138,10 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_ACCESS_FINE_LOCATION)
         }
 
+        // ストレージへのアクセスリクエスト(APIレベル28(Android 9)以下を対象)
+        if(Build.VERSION.SDK_INT <= 28 && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
+        }
 
         val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
         searchLeftDeviceButton.setOnClickListener {
@@ -166,12 +177,16 @@ class PlayMusicActivity : AppCompatActivity() {
     /**
      * スタートボタンがクリックされたときの処理
      */
-    private fun tappedStartButton(){
-        //曲をスタートする
-        val text: TextView = findViewById(R.id.textView)
-        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
-        text.setText(contentUri.toString())
-        playMusic.startMusic(contentUri)
+    private fun tappedStartButton(storageIdList: Array<Long>){
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+            playMusicContinue.orderMusic(storageIdList, this, playMusic)
+        }
+//        //曲をスタートする
+//        val text: TextView = findViewById(R.id.textView)
+//        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
+//        text.setText(contentUri.toString())
+//        playMusic.startMusic(contentUri)
         //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
@@ -180,7 +195,10 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     private fun tappedStopButton(){
         //曲をストップする
-        playMusic.stopMusic()
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を停止
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+            playMusic.stopMusic()
+        }
     }
 
     /**
@@ -189,13 +207,21 @@ class PlayMusicActivity : AppCompatActivity() {
      */
     @SuppressLint("SetTextI18n")
     private fun tappedBluetoothButton(){
-        //歩調のBpmによって曲の再生速度を変更する
-        playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ動作する
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
+          if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+              //ストレージIDを取得
+              val musicId = playMusicContinue.getStorageId()
 
-        val text: TextView = findViewById(R.id.textView)
-        text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+              //歩調のBpmによって曲の再生速度を変更する
+              playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+
+              val text: TextView = findViewById(R.id.textView)
+              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
+                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
+                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+          }
+        }
     }
 
     /**
@@ -226,6 +252,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
     /**
      * 位置情報の有効化をユーザーに求めた後に呼び出される．
+     * 外部ストレージへのアクセス許可をユーザに求めた後に呼び出される.
      */
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -237,6 +264,12 @@ class PlayMusicActivity : AppCompatActivity() {
             REQUEST_ACCESS_FINE_LOCATION -> {
                 if ((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, R.string.access_fine_location_denied_warning, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+            REQUEST_READ_EXTERNAL_STORAGE -> {
+                if((grantResults.isNotEmpty()) && grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                    Toast.makeText(this, R.string.read_external_storage_denied_warning, Toast.LENGTH_SHORT).show()
                     finish()
                 }
             }
