@@ -2,6 +2,7 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
@@ -9,10 +10,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
@@ -27,6 +25,10 @@ class PlaylistEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist_edit)
+
+        //アクションバー非表示
+        val actionBar: androidx.appcompat.app.ActionBar? = supportActionBar
+        actionBar?.hide()
 
         val db1 = PlaylistDatabase.getInstance(this)
         val db1Dao = db1.PlaylistDao()
@@ -50,7 +52,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         // CustomAdapterの生成と設定
         recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId,db2Dao)
 
-        //戻るボタンの表示
+        //戻るボタンの表示(無効中)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         //パーミッション許可をとる
@@ -66,8 +68,16 @@ class PlaylistEditActivity : AppCompatActivity() {
             )
         }
 
+        //戻るボタンクリック時
+        val backButton = findViewById<Button>(R.id.backButtonEdit)
+        backButton.setOnClickListener {
+            finish()
+        }
+
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input2)
+        val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf")
+        inputButton.typeface = customFont
         inputButton.setOnClickListener {
 
             // 曲のダウンロード成功後に呼ばれるコールバック関数．引数musicListResponseには，曲のデータMusicInfoが入ったListが渡ってくる．
@@ -124,7 +134,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         }
     }
 
-    //戻るボタンクリック時
+    //戻るボタンクリック時(無効中)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) { //戻るボタンクリック時
             finish()
@@ -163,6 +173,11 @@ class PlaylistEditActivity : AppCompatActivity() {
             val item = musicDataList[position]
             //メニュー名文字列を取得
             val musicTitle = item.title
+
+            //ビューホルダー中のTextViewのフォントを指定
+            val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf")
+            holder.musicTitle.typeface = customFont
+
             //ビューホルダ中のTextViewに設定
             holder.musicTitle.text = musicTitle
             //すでに登録されてる曲は最初にチェックをつける
