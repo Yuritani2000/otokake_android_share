@@ -44,18 +44,16 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/add_music_header" />
 
-    <Button
-        android:id="@+id/backButtonEdit"
+    <ImageButton
+        android:id="@+id/imageButton3"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginStart="20dp"
         android:layout_marginTop="88dp"
-        android:background="@drawable/button_back_arrow"
-        android:text="@string/dummy_string"
-        android:textSize="1sp"
-        app:backgroundTint="@null"
+        android:scaleType="centerCrop"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:rippleColor="@color/black" />
+        app:srcCompat="@drawable/button_back_arrow"
+        android:contentDescription="TODO" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
