@@ -69,7 +69,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         }
 
         //戻るボタンクリック時
-        val backButton = findViewById<ImageButton>(R.id.imageButton3)
+        val backButton = findViewById<ImageButton>(R.id.back_edit_image_button_view)
         backButton.setOnClickListener {
             finish()
         }

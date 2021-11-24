@@ -45,7 +45,7 @@
         app:srcCompat="@drawable/add_music_header" />
 
     <ImageButton
-        android:id="@+id/imageButton3"
+        android:id="@+id/back_edit_image_button_view"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginStart="20dp"
