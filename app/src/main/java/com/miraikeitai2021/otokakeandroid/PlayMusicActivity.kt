@@ -22,6 +22,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -50,6 +51,9 @@ class PlayMusicActivity : AppCompatActivity() {
     private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
     // 右足デバイスと通信してデータを受け取るスレッド
     private var bleConnectionRunnableRight: BleConnectionRunnable? = null
+
+    // 曲が再生中か一時停止中かを示すフィールド
+    private var isPlayingMusic = false
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,9 +114,10 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************************************
 
-        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
-        binding.stopButton.setOnClickListener { tappedStopButton() }
+//        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
+//        binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
+        binding.musicPlayOrPauseImageButton.setOnClickListener{ tappedStartButton(storageIdList)}
 
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
@@ -143,7 +148,7 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
         }
 
-        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
+        val searchLeftDeviceButton = findViewById<ImageButton>(R.id.search_device_button_left)
         searchLeftDeviceButton.setOnClickListener {
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
@@ -152,7 +157,7 @@ class PlayMusicActivity : AppCompatActivity() {
             }
         }
 
-        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
+        val searchRightDeviceButton = findViewById<ImageButton>(R.id.search_device_button_right)
         searchRightDeviceButton.setOnClickListener {
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
@@ -161,17 +166,28 @@ class PlayMusicActivity : AppCompatActivity() {
             }
         }
 
-        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-        disconnectLeftDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
-
-        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-        disconnectRightDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
+//        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
+//        disconnectLeftDeviceButton.setOnClickListener {
+//            bleConnectionRunnableLeft?.disconnect()
+//        }
+//
+//        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
+//        disconnectRightDeviceButton.setOnClickListener {
+//            bleConnectionRunnableLeft?.disconnect()
+//        }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    /**
+     * スタートボタンと一時停止を兼用したボタンがタップされたときの処理
+     */
+    private fun tappedPlayAndPauseButton(){
+//        if(!isPlayingMusic){
+//            playMusic.startMusic(playMusicContinue.getCurrentlyPlayingUri(this, playMusic))
+//        }else{
+//
+//        }
     }
 
     /**
@@ -216,10 +232,10 @@ class PlayMusicActivity : AppCompatActivity() {
               //歩調のBpmによって曲の再生速度を変更する
               playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
-              val text: TextView = findViewById(R.id.textView)
-              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+//              val text: TextView = findViewById(R.id.textView)
+//              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
+//                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
+//                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
           }
         }
     }
@@ -281,24 +297,24 @@ class PlayMusicActivity : AppCompatActivity() {
      * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
      */
     private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-        when(positionId){
-            SENSOR_LEFT_1 ->{
-                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-                sensorValueLeft1TextView.text = sensorValue.toString()
-            }
-            SENSOR_LEFT_2 ->{
-                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-                sensorValueLeft2TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_1 ->{
-                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-                sensorValueRight1TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_2 ->{
-                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-                sensorValueRight2TextView.text = sensorValue.toString()
-            }
-        }
+//        when(positionId){
+//            SENSOR_LEFT_1 ->{
+//                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
+//                sensorValueLeft1TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_LEFT_2 ->{
+//                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
+//                sensorValueLeft2TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_RIGHT_1 ->{
+//                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
+//                sensorValueRight1TextView.text = sensorValue.toString()
+//            }
+//            SENSOR_RIGHT_2 ->{
+//                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
+//                sensorValueRight2TextView.text = sensorValue.toString()
+//            }
+//        }
     }
 
     /**
@@ -423,17 +439,18 @@ class PlayMusicActivity : AppCompatActivity() {
 
         when(item.itemId) {
             android.R.id.home -> {
-                finish()
+//                finish()
+                tappedBackButton()
             }
 
             R.id.boyon -> {
                 nowSetFootsteps = "ボヨン"
-                footstepsText.text = nowSetFootsteps
+//                footstepsText.text = nowSetFootsteps
             }
 
             R.id.japanese_drum ->{
                 nowSetFootsteps = "和太鼓"
-                footstepsText.text = nowSetFootsteps
+//                footstepsText.text = nowSetFootsteps
             }
 
             else -> {
@@ -442,5 +459,10 @@ class PlayMusicActivity : AppCompatActivity() {
         }
 
         return returnVal
+    }
+
+    private fun tappedBackButton(){
+        tappedStopButton()
+        finish()
     }
 }

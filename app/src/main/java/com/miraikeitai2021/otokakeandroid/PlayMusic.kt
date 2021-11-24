@@ -52,6 +52,8 @@ class PlayMusic(context: Context) {
             } catch (e: IOException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             }
+        }else{  // 白戸追加．ポーズ状態からの再生時の動作
+            mediaPlayer?.start()
         }
     }
 
@@ -68,6 +70,17 @@ class PlayMusic(context: Context) {
             mediaPlayer!!.reset()
             mediaPlayer!!.release()
             mediaPlayer = null
+        }
+    }
+
+    /**
+     * 白戸追加．曲を一時停止するメソッド
+     */
+    fun pauseMusic(){
+        mediaPlayer?.let{
+            // 歩調のBPM情報をリセット
+            checkRunBpm.resetRunBpm()
+            it.pause()
         }
     }
 

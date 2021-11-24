@@ -1,6 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
+import android.net.Uri
 
 class PlayMusicContinue() {
     private val checkMusicUri = CheckMusicUri()
@@ -65,5 +66,12 @@ class PlayMusicContinue() {
             order = listSize - 1
         }
         return myStorageIdList[order]
+    }
+
+    /**
+     * 白戸追加．現在再生中の曲のURIを返す．
+     */
+    fun getCurrentlyPlayingUri(context: Context, playMusic: PlayMusic): Uri {
+        return checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver)
     }
 }
