@@ -51,6 +51,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="88dp"
         android:scaleType="centerCrop"
+        android:background="#00000000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/button_back_arrow"
