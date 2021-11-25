@@ -145,6 +145,7 @@ class PlaylistEditActivity : AppCompatActivity() {
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view){
         val musicTitle: TextView = view.findViewById(R.id.musicTitle)
         val checkBox: CheckBox = view.findViewById(R.id.checkBox)
+        val jacketImage: ImageView = view.findViewById(R.id.jacketImage)
         val constraintLayout: ConstraintLayout = view.findViewById(R.id.editContstraintLayout)
     }
 
@@ -183,6 +184,13 @@ class PlaylistEditActivity : AppCompatActivity() {
             //すでに登録されてる曲は最初にチェックをつける
             holder.checkBox.isChecked = defaultList.contains(item.backend_id)
 
+            //ビューホルダー中のImageViewにジャケット画像を設定
+            val storageIdDb = item.storage_id
+            if(storageIdDb != null){
+                val storageMusic = StorageMusic()
+                holder.jacketImage.setImageBitmap(storageMusic.getImage(storageIdDb, this@PlaylistEditActivity))
+            }
+
             // 曲のダウンロードが終了した後に呼ばれるコールバック関数．音楽ファイルをストレージに保存する．
             val handleMusicDownloadSuccess = fun(inputStream: InputStream){
                 Log.d("debug", "callback called: $inputStream")
@@ -204,9 +212,15 @@ class PlaylistEditActivity : AppCompatActivity() {
                         val db2Dao = db2.MusicDao()
                         //ストレージIDをデータベースへ登録
                         db2Dao.updateStorageId(item.backend_id,storageId)
+
+                        //リサイクルビューのImageViewを更新
+                        holder.jacketImage.setImageBitmap(storageMusic.getImage(storageId, this@PlaylistEditActivity))
+
                     }else{
                         Log.e("debug", "could not get ")
                     }
+
+
                 }else{
                     Log.e("debug", "external storage write is not allowed")
                 }
