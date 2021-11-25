@@ -395,18 +395,55 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     }
 
     /**
+     * デバイスの接続状態が変化したときに呼ばれるメソッド
+     * */
+    private val handleOnConnectionStatusChanged = fun(deviceName: String, state: Int){
+//        // 表示するテキストとその色が入る変数
+//        var text = ""
+//        var textColor = 0
+//        // 接続状態が「切断」か，「接続中」か，「接続済み」かを見分け，入れるテキストと色を指定
+//        when(state){
+//            DEVICE_SCANNING -> {
+//                text = getString(R.string.scanning)
+//                textColor = Color.BLACK
+//            }
+//            DEVICE_DISCONNECTED -> {
+//                text = getString(R.string.disconnected)
+//                textColor = Color.BLACK
+//            }
+//            DEVICE_CONNECTING -> {
+//                text = getString(R.string.connecting)
+//                textColor = Color.BLACK
+//            }
+//            DEVICE_CONNECTED -> {
+//                text = getString(R.string.connected)
+//                textColor = Color.GREEN
+//            }
+//        }
+//        // 対象のデバイスが左右のどちらかを指定
+//        when(deviceName){
+//            DEVICE_NAME_LEFT -> {
+//                binding.deviceConnectionStatusLeft.text = text
+//                binding.deviceConnectionStatusLeft.setTextColor(textColor)
+//            }
+//            DEVICE_NAME_RIGHT -> {
+//                binding.deviceConnectionStatusRight.text = text
+//                binding.deviceConnectionStatusRight.setTextColor(textColor)
+//            }
+//        }
+    }
+
+    /**
      * デバイスのスキャンを行う．
      */
     private fun startBleConnection(
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(updateSensorValueTextView, handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
         //変更箇所=========================================
-        val playMusicActivity = PlayMusicActivity()
-        val leScanCallback = LeScanCallback(playMusicActivity, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
         //==================================================
-        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable

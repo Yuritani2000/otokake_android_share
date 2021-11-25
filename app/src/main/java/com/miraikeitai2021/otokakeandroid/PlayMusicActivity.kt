@@ -116,8 +116,8 @@ class PlayMusicActivity : AppCompatActivity() {
 
 //        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
 //        binding.stopButton.setOnClickListener { tappedStopButton() }
+        binding.musicPlayOrPauseImageButton.setOnClickListener { tappedStartButton(storageIdList) }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
-        binding.musicPlayOrPauseImageButton.setOnClickListener{ tappedStartButton(storageIdList)}
 
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
@@ -148,20 +148,20 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
         }
 
-        val searchLeftDeviceButton = findViewById<ImageButton>(R.id.search_device_button_left)
-        searchLeftDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectLeftDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
+                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_LEFT)
                 }
             }
         }
 
-        val searchRightDeviceButton = findViewById<ImageButton>(R.id.search_device_button_right)
-        searchRightDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectRightDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
+                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_RIGHT)
                 }
             }
         }
@@ -373,6 +373,45 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
+     * デバイスの接続状態が変化したときに呼ばれるメソッド
+     * */
+    private val handleOnConnectionStatusChanged = fun(deviceName: String, status: Int){
+        // 表示するテキストとその色が入る変数
+        var text = ""
+        var textColor = 0
+        // 接続状態が「切断」か，「接続中」か，「接続済み」かを見分け，入れるテキストと色を指定
+        when(status){
+            DEVICE_SCANNING -> {
+                text = getString(R.string.scanning)
+                textColor = Color.BLACK
+            }
+            DEVICE_DISCONNECTED -> {
+                text = getString(R.string.disconnected)
+                textColor = Color.BLACK
+            }
+            DEVICE_CONNECTING -> {
+                text = getString(R.string.connecting)
+                textColor = Color.BLACK
+            }
+            DEVICE_CONNECTED -> {
+                text = getString(R.string.connected)
+                textColor = Color.parseColor("#66cdaa")
+            }
+        }
+        // 対象のデバイスが左右のどちらかを指定
+        when(deviceName){
+            DEVICE_NAME_LEFT -> {
+                binding.deviceConnectionStatusLeft.text = text
+                binding.deviceConnectionStatusLeft.setTextColor(textColor)
+            }
+            DEVICE_NAME_RIGHT -> {
+                binding.deviceConnectionStatusRight.text = text
+                binding.deviceConnectionStatusRight.setTextColor(textColor)
+            }
+        }
+    }
+
+    /**
      * 足と地面が接したときに足音の再生を行う．
      */
     private fun playFootSound(footSoundPool: SoundPool, soundId: Int){
@@ -393,9 +432,8 @@ class PlayMusicActivity : AppCompatActivity() {
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
-        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
-        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(updateSensorValueTextView, handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable

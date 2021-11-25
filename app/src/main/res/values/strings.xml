@@ -40,10 +40,12 @@
     <string name="bad_score_string">score_bad</string>
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
     <string name="connect_to_devices">デバイスに接続</string>
+    <string name="scanning">検索中...</string>
     <string name="connecting">接続中...</string>
     <string name="disconnected">切断</string>
     <string name="connected">接続済み</string>
     <string name="reconnect">再接続</string>
+    <string name="device_not_found_message">デバイスが見つかりませんでした．デバイスの電源がONになっていることを確認してください．</string>
     <string name="bpm">BPM</string>
     <string name="time_dummy">0:00</string>
     <string name="minus">-</string>
