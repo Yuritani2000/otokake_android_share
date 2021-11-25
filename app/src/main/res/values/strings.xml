@@ -41,4 +41,5 @@
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
     <string name="read_music_buckend_button">読み込み</string>
     <string name="dummy_string">.</string>
+    <string name="select_music_edit_text_view">〇曲選択中</string>
 </resources>

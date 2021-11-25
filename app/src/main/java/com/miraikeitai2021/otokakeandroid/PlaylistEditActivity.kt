@@ -20,7 +20,9 @@ import java.io.InputStream
 
 class PlaylistEditActivity : AppCompatActivity() {
 
-    private val PERMISSION_WRITE_EX_STR = 1
+    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへの書き込み許可に利用する定数
+    private var selectCount = 0 //選択している曲の数をカウントする変数
+    private var selectMusicText: TextView? = null //選択中の曲数を表示するtextViewインスタンス
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +38,6 @@ class PlaylistEditActivity : AppCompatActivity() {
         val db2Dao = db2.MusicDao()  //Daoと接続
         val db3 = MiddleListDatabase.getInstance(this)
         val db3Dao = db3.MiddleListDao()
-
 
         val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
         supportActionBar?.title = db1Dao.getTitle(playlistId) //ツールバーのタイトルを変更
@@ -132,6 +133,11 @@ class PlaylistEditActivity : AppCompatActivity() {
             val musicHttpRequests = MusicHttpRequests()
             musicHttpRequests.requestGetMusicList(getMusicListHandler)
         }
+
+        //選択中の曲数を表示
+        selectMusicText = findViewById<TextView>(R.id.select_music_text_view)
+        selectMusicText?.typeface = customFont
+        selectMusicText?.text = "${selectCount}曲選択中"
     }
 
     //戻るボタンクリック時(無効中)
@@ -184,12 +190,19 @@ class PlaylistEditActivity : AppCompatActivity() {
             //すでに登録されてる曲は最初にチェックをつける
             holder.checkBox.isChecked = defaultList.contains(item.backend_id)
 
+            //selectCountの値を現在チェックが入れられている曲の数に設定
+            if(holder.checkBox.isChecked){
+                selectCount += 1
+                selectMusicText?.text = "${selectCount}曲選択中"
+            }
+
             //ビューホルダー中のImageViewにジャケット画像を設定
             val storageIdDb = item.storage_id
             if(storageIdDb != null){
                 val storageMusic = StorageMusic()
                 holder.jacketImage.setImageBitmap(storageMusic.getImage(storageIdDb, this@PlaylistEditActivity))
             }
+
 
             // 曲のダウンロードが終了した後に呼ばれるコールバック関数．音楽ファイルをストレージに保存する．
             val handleMusicDownloadSuccess = fun(inputStream: InputStream){
@@ -248,6 +261,10 @@ class PlaylistEditActivity : AppCompatActivity() {
 
             // ダイアログのキャンセルボタンが押されたときに呼び出される関数．DBへの登録解除と，チェックボックスをはずす動作をする．
             val onClickMusicDownloadDialogCancelButton = fun(){
+                // selectCountの値を1減らす
+                selectCount -= 1
+                selectMusicText?.text = "${selectCount}曲選択中"
+
                 // DBの中間テーブルから削除
                 db3Dao.deleteMusic(playlist_id,item.backend_id)
                 holder.checkBox.isChecked = false
@@ -280,6 +297,10 @@ class PlaylistEditActivity : AppCompatActivity() {
             //曲タップ時の処理
             holder.constraintLayout.setOnClickListener {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
+                    // selectCountの値を1増やす
+                    selectCount += 1
+                    selectMusicText?.text = "${selectCount}曲選択中"
+
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = true
@@ -287,6 +308,10 @@ class PlaylistEditActivity : AppCompatActivity() {
                     downloadMusic()
                 }
                 else{   //チェック入ってる(削除)時
+                    // selectCountの値を1減らす
+                    selectCount -= 1
+                    selectMusicText?.text = "${selectCount}曲選択中"
+
                     // DBの中間テーブルから削除
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = false
@@ -296,10 +321,18 @@ class PlaylistEditActivity : AppCompatActivity() {
             //チェックボックスタップ時の処理
             holder.checkBox.setOnClickListener {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録解除)時
+                    // selectCountの値を1減らす
+                    selectCount -= 1
+                    selectMusicText?.text = "${selectCount}曲選択中"
+
                     // DBの中間テーブルから削除
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
                 }
                 else{   //チェック入ってる(登録)時
+                    // selectCountの値を1増やす
+                    selectCount += 1
+                    selectMusicText?.text = "${selectCount}曲選択中"
+
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     Log.d("debug", "element tapped in PlaylistEditActivity")
