@@ -120,14 +120,23 @@
                 android:layout_marginTop="16dp"
                 android:text="@string/dummy_music_title"
                 android:textColor="@color/black"
-                android:textSize="24dp"/>
+                android:textSize="26dp"/>
+
+            <TextView
+                android:id="@+id/music_artist_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:text="@string/dummy_music_artist"
+                android:textColor="@color/black"
+                android:textSize="18dp"/>
 
             <ImageView
-                android:id="@+id/music_cover_image_view"
+                android:id="@+id/music_album_image_view"
                 android:layout_width="250dp"
                 android:layout_height="250dp"
-                android:layout_gravity="center"
-                android:background="@drawable/otokake_logo"/>
+                android:layout_gravity="center"/>
 
             <LinearLayout
                 android:layout_gravity="center"

@@ -7,13 +7,13 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioAttributes
+import android.media.MediaMetadataRetriever
 import android.media.SoundPool
-import android.net.Uri
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -23,6 +23,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
 import kotlinx.coroutines.*
+import java.lang.Exception
 
 // ストレージの読込Permissionをリクエストするときのリクエストコード
 private const val REQUEST_READ_EXTERNAL_STORAGE = 1001
@@ -55,6 +56,9 @@ class PlayMusicActivity : AppCompatActivity() {
     // 曲の再生がActivityを起動してから最初に行われるどうか判定する
     private var isFirstTimeToPlay = true
 
+    // 曲目データベースのインスタンス
+    private val musicDatabase = MusicDatabase.getInstance(this)
+    val musicDao = musicDatabase.MusicDao()
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -197,7 +201,7 @@ class PlayMusicActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
-        watchPlayerStatusCoroutine()
+        watchPlayerStatusCoroutine(storageIdList)
     }
 
     /**
@@ -239,8 +243,8 @@ class PlayMusicActivity : AppCompatActivity() {
      * 早送りボタンがタップされたときの処理
      */
     private fun tappedSkipButton(){
-        //曲の終わりまで飛ばす
-        playMusic.seekTo(playMusic.getDuration())
+        //次の曲を再生する．
+        playMusicContinue.callBackPlayMusic(this, playMusic)
     }
 
     /**
@@ -283,6 +287,23 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
+     * 曲のメタデータから画像を持ってくる処理
+     */
+    private fun getAlbumPictureFromMetadata(storageId: Long): ByteArray?{
+        val mmr = MediaMetadataRetriever()
+        mmr.setDataSource(this, checkMusicUri.checkUri(storageId.toInt(), this.contentResolver))
+        var albumPictureByteArray: ByteArray? = null
+        if(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) != null) {
+            try {
+                albumPictureByteArray = mmr.embeddedPicture
+            }catch(e: Exception){
+                Log.e("debug", "failed to get album picture: $e")
+            }
+        }
+        return albumPictureByteArray
+    }
+
+    /**
      * Bluetoothボタンがクリックされたときの処理
      * 今はボタンで割り込んでいるが，Bluetoothの通信による割込みに変えたい
      */
@@ -295,8 +316,11 @@ class PlayMusicActivity : AppCompatActivity() {
               val musicId = playMusicContinue.getStorageId()
 
               //歩調のBpmによって曲の再生速度を変更する
-              playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+              val runBpm = checkRunBpm.checkRunBpm(this, musicId.toInt())
+              playMusic.changeSpeedMusic(runBpm,checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
+              // BPMのTextViewをRunBPMで更新
+              binding.runBpmValueTextView.text = "%.1f".format(runBpm)
 //              val text: TextView = findViewById(R.id.textView)
 //              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
 //                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
@@ -573,9 +597,11 @@ class PlayMusicActivity : AppCompatActivity() {
      * Coroutinesという，軽量な非同期処理を行う機構．100ms毎にループして動作するように設定．
      * 曲の再生，停止，一時停止，曲の進捗等に関する処理を行う．
      */
-    private fun watchPlayerStatusCoroutine(){
+    private fun watchPlayerStatusCoroutine(storageIdList: Array<Long>){
         // 不必要な時にUIの更新を行わないように，前の状態と比較する為の変数．
         var previousPlayState = playMusic.isPlaying()
+        // 不必要なクエリやUIの更新を行わないように，前の，再生していた曲の状態を見るための変数．
+        var previousMusicOrder = -1
         GlobalScope.launch {
             while(true){
                 // 今回はこの中でUIの更新を行いたい．しかしCoroutinesのデフォルトはUIスレッドでないらしいので，UIスレッドでの処理とする．
@@ -614,6 +640,28 @@ class PlayMusicActivity : AppCompatActivity() {
                         binding.musicSeekBar.progress =
                             (1000 * (musicProgress.toDouble() / musicDuration.toDouble())).toInt()
                     }
+
+                    if(previousMusicOrder != playMusicContinue.getOrder()){
+                        // 現在再生中の曲の情報を取得
+                        val firstMusicInfo = musicDao.getMusicFromStorageId(storageIdList[playMusicContinue.getOrder()])
+                        firstMusicInfo?.let {
+                            val firstMusicTitle = firstMusicInfo.title
+                            val firstMusicArtist = firstMusicInfo.artist
+                            // TextViewにセット
+                            binding.musicTitleTextView.text = firstMusicTitle
+                            binding.musicArtistTextView.text = firstMusicArtist
+                        }
+
+                        // 曲のアルバム画像を取得
+                        val albumPictureByteArray = getAlbumPictureFromMetadata(storageIdList[playMusicContinue.getOrder()])
+                        albumPictureByteArray?.let{ albumPictureByteArray ->
+                            val albumPictureBitmap = BitmapFactory.decodeByteArray(albumPictureByteArray, 0, albumPictureByteArray.size)
+                            albumPictureBitmap?.let { albumPictureBitmap ->
+                                binding.musicAlbumImageView.setImageBitmap(albumPictureBitmap)
+                            }
+                        }
+                    }
+                    previousMusicOrder = playMusicContinue.getOrder()
                     delay(100)
                 }
             }

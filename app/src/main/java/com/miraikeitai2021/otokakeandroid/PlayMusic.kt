@@ -2,7 +2,6 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.media.MediaPlayer.OnPreparedListener
 import android.media.PlaybackParams
 import android.net.Uri
 import android.os.Handler

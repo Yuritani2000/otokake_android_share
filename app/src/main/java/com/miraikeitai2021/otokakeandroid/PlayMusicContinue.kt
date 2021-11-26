@@ -41,12 +41,22 @@ class PlayMusicContinue() {
      * 配列の最後まで進んだ時はstopMusicのみを呼んでループを終了する．
      */
     fun callBackPlayMusic(context: Context, playMusic: PlayMusic){
-        order += 1
-        if(order >= listSize){
+        // orderの値を100ms起きに参照して曲情報を持ってくることにした．
+        // つまり，orderの値が配列の範囲外を指すと例外が起こるので，
+        // orderの値はゼロから配列長-1の範囲外にならないようにする．
+        if(order + 1>= listSize){
             if(playMusic.getMediaPlayer() != null){
-                playMusic.stopMusic()
+                // スキップボタンから呼び出された場合(曲がまだ終わっていない場合)，動作を無効にする．
+                if(playMusic.getProgress() >= playMusic.getDuration()){
+                    // 最後の曲の再生が終わった後に好きな位置に戻れるように，stopではなくpauseにしておく．
+                    playMusic.pauseMusic()
+//                    playMusic.stopMusic()
+                }
             }
         }else{
+            // orderのインクリメント位置をずらす．最後以外の曲の再生が終わった時だけ，インクリメントすることで，
+            // orderが範囲外にならないようにする．
+            order++
             if(playMusic.getMediaPlayer() != null){
                 playMusic.stopMusic()
             }
@@ -57,15 +67,19 @@ class PlayMusicContinue() {
     }
 
     /**
-     * 白戸追加．1曲前の曲を再生する．
+     * 1曲前の曲を再生する．
      */
     fun playPreviousTrack(context: Context, playMusic: PlayMusic){
-        order--
-        if(order < 0){// 再生リスト配列の最初であった場合は，位置0に再生位置を合わせるのみにする．
-            order = 0
+        // orderの値を100ms起きに参照して曲情報を持ってくることにした．
+        // つまり，orderの値が配列の範囲外を指すと例外が起こるので，
+        // orderの値はゼロから配列長-1の範囲外にならないようにする．
+        if(order - 1 < 0){// 再生リスト配列の最初であった場合は，位置0に再生位置を合わせるのみにする．
             playMusic.seekTo(0)
             return
         }else{
+            // orderのデクリメントの位置をずらす．最初以外の曲で巻き戻しボタンを押したときだけ，デクリメントすることで，
+            // orderが範囲外にならないようにする．
+            order--
             if(playMusic.getMediaPlayer() != null){
                 playMusic.stopMusic()
             }
@@ -88,9 +102,9 @@ class PlayMusicContinue() {
     }
 
     /**
-     * 白戸追加．現在再生中の曲のURIを返す．
+     * 現在再生中の曲の順番を返す．
      */
-    fun getCurrentlyPlayingUri(context: Context, playMusic: PlayMusic): Uri {
-        return checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver)
+    fun getOrder(): Int{
+        return order
     }
 }
