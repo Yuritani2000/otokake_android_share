@@ -57,6 +57,25 @@ class PlayMusicContinue() {
     }
 
     /**
+     * 白戸追加．1曲前の曲を再生する．
+     */
+    fun playPreviousTrack(context: Context, playMusic: PlayMusic){
+        order--
+        if(order < 0){// 再生リスト配列の最初であった場合は，位置0に再生位置を合わせるのみにする．
+            order = 0
+            playMusic.seekTo(0)
+            return
+        }else{
+            if(playMusic.getMediaPlayer() != null){
+                playMusic.stopMusic()
+            }
+            if(playMusic.getMediaPlayer() == null){
+                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
+            }
+        }
+    }
+
+    /**
      * ストレージ配列からストレージIDを返す．
      * orderがストレージ配列の長さを以上の値になってしまっている場合は
      * ストレージ配列の最後の値を指定する．

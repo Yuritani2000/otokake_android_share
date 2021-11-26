@@ -11,25 +11,23 @@ import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.SoundPool
 import android.net.Uri
-import android.os.Build
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
+import kotlinx.coroutines.*
 
+// ストレージの読込Permissionをリクエストするときのリクエストコード
 private const val REQUEST_READ_EXTERNAL_STORAGE = 1001
+
+
 
 class PlayMusicActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
@@ -54,6 +52,9 @@ class PlayMusicActivity : AppCompatActivity() {
 
     // 曲が再生中か一時停止中かを示すフィールド
     private var isPlayingMusic = false
+    // 曲の再生がActivityを起動してから最初に行われるどうか判定する
+    private var isFirstTimeToPlay = true
+
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,8 +117,10 @@ class PlayMusicActivity : AppCompatActivity() {
 
 //        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
 //        binding.stopButton.setOnClickListener { tappedStopButton() }
-        binding.musicPlayOrPauseImageButton.setOnClickListener { tappedStartButton(storageIdList) }
+        binding.musicPlayAndPauseImageButton.setOnClickListener { tappedPlayAndPauseButton(storageIdList) }
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
+        binding.musicRewindImageButton.setOnClickListener { tappedRewindButton() }
+        binding.musicSkipImageButton.setOnClickListener { tappedSkipButton() }
 
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
@@ -166,6 +169,21 @@ class PlayMusicActivity : AppCompatActivity() {
             }
         }
 
+        // シークバーの初期化．1000段階で表示．
+        binding.musicSeekBar.max = 1000
+        binding.musicSeekBar.progress = 0
+
+        // シークバーが操作されたときのリスナを登録
+        binding.musicSeekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener{
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if(fromUser){
+                    onSeekBarProgressChanged(progress)
+                }
+            }
+            override fun onStartTrackingTouch(p0: SeekBar?) {}
+            override fun onStopTrackingTouch(p0: SeekBar?) {}
+        })
+
 //        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
 //        disconnectLeftDeviceButton.setOnClickListener {
 //            bleConnectionRunnableLeft?.disconnect()
@@ -177,17 +195,52 @@ class PlayMusicActivity : AppCompatActivity() {
 //        }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
+        watchPlayerStatusCoroutine()
     }
 
     /**
      * スタートボタンと一時停止を兼用したボタンがタップされたときの処理
      */
-    private fun tappedPlayAndPauseButton(){
-//        if(!isPlayingMusic){
-//            playMusic.startMusic(playMusicContinue.getCurrentlyPlayingUri(this, playMusic))
-//        }else{
-//
-//        }
+    private fun tappedPlayAndPauseButton(storageIdList: Array<Long>){
+        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            // 曲が停止中かつ，Activityを起動後に初めて再生する場合
+            if (isFirstTimeToPlay && !isPlayingMusic) {
+                playMusicContinue.orderMusic(storageIdList, this, playMusic)
+                isPlayingMusic = true
+                isFirstTimeToPlay = false
+            } else if (isPlayingMusic) {// 曲が再生中の場合
+                // 再生を一時停止する
+                playMusic.pauseMusic()
+                isPlayingMusic = false
+            }else{// 曲が再生中でない場合
+                // 曲の再生を再開する
+                playMusic.resumeMusic()
+                isPlayingMusic = true
+            }
+        }
+    }
+
+    /**
+     * 巻き戻しボタンがタップされたときの処理
+     */
+    private fun tappedRewindButton(){
+        // 始めから2秒以内のところで巻き戻しボタンを押した場合，前の曲を再生．
+        if(playMusic.getProgress() <= 2000){
+            playMusicContinue.playPreviousTrack(this, playMusic)
+        }else{// それ以外は，再生位置を0に戻す
+            playMusic.seekTo(0)
+        }
+    }
+
+    /**
+     * 早送りボタンがタップされたときの処理
+     */
+    private fun tappedSkipButton(){
+        //曲の終わりまで飛ばす
+        playMusic.seekTo(playMusic.getDuration())
     }
 
     /**
@@ -214,6 +267,18 @@ class PlayMusicActivity : AppCompatActivity() {
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を停止
         if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
             playMusic.stopMusic()
+        }
+    }
+
+    /**
+     * シークバーが操作されたときの処理
+     */
+    private fun onSeekBarProgressChanged(progress: Int){
+        // SeekBar上のprogressは千分率なので，割合に戻す．
+        val progressRate = progress.toDouble() / 1000
+        val nextProgress = (playMusic.getDuration() * progressRate).toInt()
+        if(playMusic.getDuration() != -1){
+            playMusic.seekTo(nextProgress)
         }
     }
 
@@ -503,4 +568,57 @@ class PlayMusicActivity : AppCompatActivity() {
         tappedStopButton()
         finish()
     }
+
+    /**
+     * Coroutinesという，軽量な非同期処理を行う機構．100ms毎にループして動作するように設定．
+     * 曲の再生，停止，一時停止，曲の進捗等に関する処理を行う．
+     */
+    private fun watchPlayerStatusCoroutine(){
+        // 不必要な時にUIの更新を行わないように，前の状態と比較する為の変数．
+        var previousPlayState = playMusic.isPlaying()
+        GlobalScope.launch {
+            while(true){
+                // 今回はこの中でUIの更新を行いたい．しかしCoroutinesのデフォルトはUIスレッドでないらしいので，UIスレッドでの処理とする．
+                withContext(Dispatchers.Main){
+
+                    // 曲の現在の進捗を取得(ミリ秒)
+                    val musicProgress = playMusic.getProgress()
+                    // 曲の長さを取得(ミリ秒)
+                    val musicDuration = playMusic.getDuration()
+
+                    if(musicProgress != -1){
+                        val minute = musicProgress / 1000 / 60
+                        val second = musicProgress / 1000 % 60
+                        binding.musicTimeProgressTextView.text = "$minute:${"%02d".format(second)}"
+                    }
+
+                    // 曲の残りの長さを見てUIを更新する．
+                    if(musicProgress != -1 && musicDuration != -1){
+                        val remainingTimeMilliSeconds = musicDuration - musicProgress
+                        if(remainingTimeMilliSeconds >= 0){
+                            val remainingMinute = remainingTimeMilliSeconds / 1000 / 60
+                            val remainingSecond = remainingTimeMilliSeconds / 1000 % 60
+                            binding.musicTimeRemainTextView.text = "$remainingMinute:${"%02d".format(remainingSecond)}"
+                        }
+                    }
+
+                    // 曲が再生中かどうかを見て再生/一時停止ボタンのUIを変更する
+
+                    if(previousPlayState != playMusic.isPlaying()){
+                        binding.musicPlayAndPauseImageButton.background = if(playMusic.isPlaying()) getDrawable(R.drawable.button_play_pause) else getDrawable(R.drawable.button_play_play)
+                    }
+                    previousPlayState = playMusic.isPlaying()
+
+                    // 再生中は曲の長さに応じてシークバーを操作する．
+                    if(playMusic.isPlaying()) {
+                        binding.musicSeekBar.progress =
+                            (1000 * (musicProgress.toDouble() / musicDuration.toDouble())).toInt()
+                    }
+                    delay(100)
+                }
+            }
+        }
+    }
+
 }
+

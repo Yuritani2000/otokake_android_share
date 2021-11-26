@@ -52,7 +52,15 @@ class PlayMusic(context: Context) {
             } catch (e: IOException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             }
-        }else{  // 白戸追加．ポーズ状態からの再生時の動作
+        }
+    }
+
+    /**
+     * 白戸追加．音楽の再生を途中から再開するメソッド
+     */
+    fun resumeMusic(){
+        mediaPlayer?.let { mediaPlayer ->
+            // 白戸追加．ポーズ状態からの再生時の動作
             mediaPlayer?.start()
         }
     }
@@ -82,6 +90,43 @@ class PlayMusic(context: Context) {
             checkRunBpm.resetRunBpm()
             it.pause()
         }
+    }
+
+    /**
+     * 白戸追加．曲の一時停止か・再生中かの状態を取得する．
+     */
+    fun getIsPlaying(): Boolean{
+        mediaPlayer?.let{
+            return it.isPlaying
+        }
+        return false
+    }
+
+    /**
+     * 白戸追加．曲の全体の長さを取得する．
+     */
+    fun getDuration(): Int{
+        mediaPlayer?.let{
+            return it.duration
+        }
+        return -1
+    }
+
+    /**
+     * 白戸追加．曲の現在の再生位置を取得する．
+     */
+    fun getProgress(): Int{
+        mediaPlayer?.let{
+            return it.currentPosition
+        }
+        return -1
+    }
+
+    /**
+     * 白戸追加．曲の再生位置を移動する．
+     */
+    fun seekTo(milliSecond: Int){
+        mediaPlayer?.seekTo(milliSecond)
     }
 
     /**
