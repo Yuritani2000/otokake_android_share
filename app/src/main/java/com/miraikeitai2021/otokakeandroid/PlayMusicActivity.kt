@@ -231,11 +231,14 @@ class PlayMusicActivity : AppCompatActivity() {
      * 巻き戻しボタンがタップされたときの処理
      */
     private fun tappedRewindButton(){
-        // 始めから2秒以内のところで巻き戻しボタンを押した場合，前の曲を再生．
-        if(playMusic.getProgress() <= 2000){
-            playMusicContinue.playPreviousTrack(this, playMusic)
-        }else{// それ以外は，再生位置を0に戻す
-            playMusic.seekTo(0)
+        // 曲を一度も再生したことがない状態で作動しないようにする
+        if(playMusic.getMediaPlayer() != null){
+            // 始めから2秒以内のところで巻き戻しボタンを押した場合，前の曲を再生．
+            if(playMusic.getProgress() <= 2000){
+                playMusicContinue.playPreviousTrack(this, playMusic)
+            }else{// それ以外は，再生位置を0に戻す
+                playMusic.seekTo(0)
+            }
         }
     }
 
@@ -243,8 +246,11 @@ class PlayMusicActivity : AppCompatActivity() {
      * 早送りボタンがタップされたときの処理
      */
     private fun tappedSkipButton(){
-        //次の曲を再生する．
-        playMusicContinue.callBackPlayMusic(this, playMusic)
+        // 曲を一度も再生したことがない状態で作動しないようにする
+        if(playMusic.getMediaPlayer() != null){
+            //次の曲を再生する．
+            playMusicContinue.callBackPlayMusic(this, playMusic)
+        }
     }
 
     /**
@@ -643,22 +649,29 @@ class PlayMusicActivity : AppCompatActivity() {
 
                     if(previousMusicOrder != playMusicContinue.getOrder()){
                         // 現在再生中の曲の情報を取得
-                        val firstMusicInfo = musicDao.getMusicFromStorageId(storageIdList[playMusicContinue.getOrder()])
-                        firstMusicInfo?.let {
-                            val firstMusicTitle = firstMusicInfo.title
-                            val firstMusicArtist = firstMusicInfo.artist
-                            // TextViewにセット
-                            binding.musicTitleTextView.text = firstMusicTitle
-                            binding.musicArtistTextView.text = firstMusicArtist
-                        }
-
-                        // 曲のアルバム画像を取得
-                        val albumPictureByteArray = getAlbumPictureFromMetadata(storageIdList[playMusicContinue.getOrder()])
-                        albumPictureByteArray?.let{ albumPictureByteArray ->
-                            val albumPictureBitmap = BitmapFactory.decodeByteArray(albumPictureByteArray, 0, albumPictureByteArray.size)
-                            albumPictureBitmap?.let { albumPictureBitmap ->
-                                binding.musicAlbumImageView.setImageBitmap(albumPictureBitmap)
+                        // ここで例外（配列範囲外）が起こっている．原因を突き止め対処する
+                        Log.d("debug", "current order: ${playMusicContinue.getOrder()}")
+                        Log.d("debug", "storageIdList size: ${storageIdList.size}")
+                        if(playMusicContinue.getOrder() in 0..storageIdList.lastIndex){
+                            val firstMusicInfo = musicDao.getMusicFromStorageId(storageIdList[playMusicContinue.getOrder()])
+                            firstMusicInfo?.let {
+                                val firstMusicTitle = firstMusicInfo.title
+                                val firstMusicArtist = firstMusicInfo.artist
+                                // TextViewにセット
+                                binding.musicTitleTextView.text = firstMusicTitle
+                                binding.musicArtistTextView.text = firstMusicArtist
                             }
+
+                            // 曲のアルバム画像を取得
+                            val albumPictureByteArray = getAlbumPictureFromMetadata(storageIdList[playMusicContinue.getOrder()])
+                            albumPictureByteArray?.let{ albumPictureByteArray ->
+                                val albumPictureBitmap = BitmapFactory.decodeByteArray(albumPictureByteArray, 0, albumPictureByteArray.size)
+                                albumPictureBitmap?.let { albumPictureBitmap ->
+                                    binding.musicAlbumImageView.setImageBitmap(albumPictureBitmap)
+                                }
+                            }
+                        }else{
+                            Log.e("debug", "array out of bound")
                         }
                     }
                     previousMusicOrder = playMusicContinue.getOrder()

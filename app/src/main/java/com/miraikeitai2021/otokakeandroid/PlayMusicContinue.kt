@@ -2,15 +2,14 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 
 class PlayMusicContinue() {
     private val checkMusicUri = CheckMusicUri()
 
-    companion object{
-        private var listSize = 0
-        private var order = 0
-        private var myStorageIdList: Array<Long> = arrayOf()
-    }
+    private var listSize = 0
+    private var order = 0
+    private var myStorageIdList: Array<Long> = arrayOf()
 
     /**
      * 再生リストが押されたら先ずここが呼ばれる．
@@ -41,6 +40,8 @@ class PlayMusicContinue() {
      * 配列の最後まで進んだ時はstopMusicのみを呼んでループを終了する．
      */
     fun callBackPlayMusic(context: Context, playMusic: PlayMusic){
+        Log.d("debug", "playMusic: ${playMusic.getMediaPlayer()}")
+        Log.d("debug", "listSize: $listSize")
         // orderの値を100ms起きに参照して曲情報を持ってくることにした．
         // つまり，orderの値が配列の範囲外を指すと例外が起こるので，
         // orderの値はゼロから配列長-1の範囲外にならないようにする．
@@ -61,6 +62,7 @@ class PlayMusicContinue() {
                 playMusic.stopMusic()
             }
             if(playMusic.getMediaPlayer() == null){
+                Log.d("debug", "play next track")
                 playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
             }
         }
