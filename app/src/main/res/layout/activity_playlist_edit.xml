@@ -94,10 +94,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="22dp"
                         android:text="@string/layout_edit_download_list_text_view"
-                        android:textSize="18sp"
+                        android:textSize="20sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"/>
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <Button
                         android:id="@+id/button2"
@@ -133,10 +133,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="22dp"
                         android:text="@string/layout_edit_not_download_list_text_view"
-                        android:textSize="18sp"
+                        android:textSize="20sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"/>
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <Button
                         android:id="@+id/button3"

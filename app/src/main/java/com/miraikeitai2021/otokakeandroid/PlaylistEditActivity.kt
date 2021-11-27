@@ -1,6 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.*
@@ -203,10 +204,38 @@ class PlaylistEditActivity : AppCompatActivity() {
             musicHttpRequests.requestGetMusicList(getMusicListHandler)
         }
 
+        //ダウンロード済みの全て見るボタンクリック時
+        val buttonView2 = findViewById<Button>(R.id.button2)
+        buttonView2.typeface = customFont
+        buttonView2.setOnClickListener {
+            //インテント処理
+            val intent = Intent(this, PlaylistEditActivity::class.java)
+            intent.putExtra("playlist_id",playlistId)
+            startActivityForResult(intent, 9)
+        }
+
+        //未ダウンロードの全て見るボタンクリック時
+        val buttonView3 = findViewById<Button>(R.id.button3)
+        buttonView3.typeface = customFont
+        buttonView3.setOnClickListener {
+            //インテント処理
+            val intent = Intent(this, PlaylistEditActivity::class.java)
+            intent.putExtra("playlist_id",playlistId)
+            startActivityForResult(intent, 9)
+        }
+
         //選択中の曲数を表示
         selectMusicText = findViewById<TextView>(R.id.select_music_text_view)
         selectMusicText?.typeface = customFont
         selectMusicText?.text = "${selectCount}曲選択中"
+
+        //textView2のフォント指定
+        val textView2 = findViewById<TextView>(R.id.textView2)
+        textView2.typeface = customFont
+
+        //textView3のフォント指定
+        val textView3 = findViewById<TextView>(R.id.textView3)
+        textView3.typeface = customFont
     }
 
     //戻るボタンクリック時(無効中)
