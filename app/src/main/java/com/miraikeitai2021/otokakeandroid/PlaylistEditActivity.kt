@@ -44,14 +44,46 @@ class PlaylistEditActivity : AppCompatActivity() {
 
         var musicDataList = db2Dao.getAll() //データベースの全曲取得
 
+        //曲をダウンロード済みリストと未ダウンロードリストに分ける．
+        var downloadMusicList: MutableList<Music> = arrayListOf()
+        var notDownloadMusicList: MutableList<Music> = arrayListOf()
+
+        for(music in musicDataList){
+            if(music.storage_id != null){
+                downloadMusicList.add(music)
+            }else{
+                notDownloadMusicList.add(music)
+            }
+        }
+
         val defaultList = db3Dao.getPlaylist(playlistId)   //もともと登録されてる曲一覧を取得
 
-        // RecyclerViewの取得
+        // 横方向スクロールに設定
+        val manager2 = LinearLayoutManager(this)
+        manager2.orientation = LinearLayoutManager.HORIZONTAL
+
+        val manager3 = LinearLayoutManager(this)
+        manager3.orientation = LinearLayoutManager.HORIZONTAL
+
+        // RecyclerView2の取得
         var recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
         // LayoutManagerの設定
-        recyclerView2.layoutManager = LinearLayoutManager(this)
+        recyclerView2.layoutManager = manager2
         // CustomAdapterの生成と設定
-        recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId,db2Dao)
+        if(downloadMusicList.size != 0) {
+            // CustomAdapterの生成と設定
+            recyclerView2.adapter = RecyclerListAdapter(downloadMusicList, defaultList, db3Dao, playlistId, db2Dao)
+        }
+
+        // RecyclerView3の取得
+        var recyclerView3 = findViewById<RecyclerView>(R.id.RecyclerView3)
+        // LayoutManagerの設定
+        recyclerView3.layoutManager = manager3
+        // CustomAdapterの生成と設定
+        if(notDownloadMusicList.size != 0) {
+            // CustomAdapterの生成と設定
+            recyclerView3.adapter = RecyclerListAdapter(notDownloadMusicList, defaultList, db3Dao, playlistId, db2Dao)
+        }
 
         //戻るボタンの表示(無効中)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -103,12 +135,49 @@ class PlaylistEditActivity : AppCompatActivity() {
                 // データベースに登録し，更新された曲一覧を取得する．
                 musicDataList = db2Dao.getAll()
 
+                //曲をダウンロード済みリストと未ダウンロードリストに分ける．
+                downloadMusicList = arrayListOf()
+                notDownloadMusicList = arrayListOf()
+
+                for(music in musicDataList){
+                    if(music.storage_id != null){
+                        downloadMusicList.add(music)
+                    }else{
+                        notDownloadMusicList.add(music)
+                    }
+                }
+
                 // RecyclerViewの取得
                 recyclerView2 = findViewById(R.id.RecyclerView2)
                 // LayoutManagerの設定
-                recyclerView2.layoutManager = LinearLayoutManager(this)
+                recyclerView2.layoutManager = manager2
                 // CustomAdapterの生成と設定
-                recyclerView2.adapter=RecyclerListAdapter(musicDataList, defaultList, db3Dao, playlistId,db2Dao)
+                if(downloadMusicList.size != 0) {
+                    recyclerView2.adapter = RecyclerListAdapter(
+                        downloadMusicList,
+                        defaultList,
+                        db3Dao,
+                        playlistId,
+                        db2Dao
+                    )
+                }
+
+                // RecyclerView3の取得
+                recyclerView3 = findViewById(R.id.RecyclerView3)
+                // LayoutManagerの設定
+                recyclerView3.layoutManager = manager3
+                // CustomAdapterの生成と設定
+                if(notDownloadMusicList.size != 0) {
+                    // CustomAdapterの生成と設定
+                    recyclerView3.adapter = RecyclerListAdapter(
+                        notDownloadMusicList,
+                        defaultList,
+                        db3Dao,
+                        playlistId,
+                        db2Dao
+                    )
+                }
+
 
                 Log.d("debug", "コールバック呼ばれました")
             }
