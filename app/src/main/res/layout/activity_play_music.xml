@@ -83,7 +83,6 @@
 
         -->
 
-        <!--
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -100,12 +99,11 @@
                 android:layout_height="1dp"
                 android:layout_weight="1"/>
             <ImageButton
+                android:id="@+id/change_footstep_button"
                 android:layout_width="55dp"
                 android:layout_height="55dp"
                 android:background="@drawable/button_play_set_footstep"/>
         </LinearLayout>
-
-        -->
 
         <LinearLayout
             android:layout_width="match_parent"

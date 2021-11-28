@@ -310,8 +310,8 @@ class GattCallback(private val context: Context, private val bluetoothConnection
         }
     }
 
-    // 1つ前に受け取ったセンサの計測値と，今うけとったセンサの計測値を格納するための配列
-    private val gap1 = arrayOf(0,0)
+    // 足が地面についているかどうかを示す変数．
+    private var isFootOnTheGround = false
 
     // デバイスから定期的にキャラクタリスティックとよばれる通信データが送られてくると呼ばれる関数．
     override fun onCharacteristicChanged(
@@ -326,16 +326,16 @@ class GattCallback(private val context: Context, private val bluetoothConnection
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
 
-                // 配列の要素をずらす．
-                gap1[0] = gap1[1]
-                gap1[1] = sensorValue1
-
-                // 圧力値(低いほど高い)が3072以上，かつ，圧力の減少幅が-500以上であった場合は，足音を鳴らす信号をメインスレッドに送信する．
-                if(gap1[0] in 1500..4095 && (gap1[1] - gap1[0]) <= -500 && gap1[1] in 0..1000){
-                    Log.d("debug", "gap[0]: ${gap1[0]}, gap[1]: ${gap1[1]}")
+                // 「前回の計測出足が地面についていな状態(0..500の範囲外)」かつ，今回の計測で足が地面についている状態(0..500の範囲内)であったら，足が着いた瞬間として検知
+                if(!isFootOnTheGround && sensorValue1 in 0..500){
+                    Log.d("debug", "seonsorValue1: $sensorValue1")
                     val footOnTheGroundMsg = bluetoothConnectionHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                     footOnTheGroundMsg.sendToTarget()
                 }
+
+                // 500未満ならば足は地面についているという判定
+                isFootOnTheGround = sensorValue1 in 0..500
+
                     val sensorValue1Msg = bluetoothConnectionHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
                     sensorValue1Msg.sendToTarget()
                     val sensorValue2Msg = bluetoothConnectionHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)

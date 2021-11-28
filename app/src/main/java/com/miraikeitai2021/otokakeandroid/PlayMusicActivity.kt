@@ -16,6 +16,7 @@ import android.os.*
 import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
@@ -125,7 +126,11 @@ class PlayMusicActivity : AppCompatActivity() {
         binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
         binding.musicRewindImageButton.setOnClickListener { tappedRewindButton() }
         binding.musicSkipImageButton.setOnClickListener { tappedSkipButton() }
+        binding.backButton.setOnClickListener { tappedBackButton() }
+        binding.changeFootstepButton.setOnClickListener { view -> tappedChangeFootStepButton(view) }
 
+        // アクションバーの非表示
+        supportActionBar?.hide()
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
         fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
@@ -594,9 +599,38 @@ class PlayMusicActivity : AppCompatActivity() {
         return returnVal
     }
 
+    /**
+     * 前の画面に戻るボタンがタップされたときの処理
+     */
     private fun tappedBackButton(){
         tappedStopButton()
         finish()
+    }
+
+    /**
+     * 足音の変更ボタンがタップされたときの処理
+     */
+    private fun tappedChangeFootStepButton(v: View){
+        val footStepChangePopup = PopupMenu(this, v)
+        val inflater: MenuInflater = footStepChangePopup.menuInflater
+        inflater.inflate(R.menu.menu_options_play_music, footStepChangePopup.menu)
+        footStepChangePopup.setOnMenuItemClickListener { item ->
+            when(item.itemId){
+                R.id.boyon -> {
+                    nowSetFootsteps = "ボヨン"
+                    true
+//                footstepsText.text = nowSetFootsteps
+                }
+
+                R.id.japanese_drum ->{
+                    nowSetFootsteps = "和太鼓"
+                    true
+//                footstepsText.text = nowSetFootsteps
+                }
+                else -> false
+            }
+        }
+        footStepChangePopup.show()
     }
 
     /**
