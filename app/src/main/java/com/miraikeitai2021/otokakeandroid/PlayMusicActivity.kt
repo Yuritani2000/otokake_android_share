@@ -540,12 +540,20 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-     * Activityが終わるたびに，Bluetoothの接続を切っておく必要がある．
+     * Activityがバックグラウンドに行く時のメソッド．
      */
     override fun onPause() {
         super.onPause()
+    }
+
+    /**
+     * Activityが破棄されるときに呼び出されるメソッド．曲の再生を止めると同時に，Bluetoothの接続を切断する．
+     */
+    override fun onDestroy() {
+        super.onDestroy()
         bleConnectionRunnableLeft?.disconnect()
         bleConnectionRunnableRight?.disconnect()
+        playMusic.stopMusic()
     }
 
     /**
