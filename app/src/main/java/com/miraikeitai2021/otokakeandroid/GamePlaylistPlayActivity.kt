@@ -182,7 +182,6 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                         this@GamePlaylistPlayActivity,
                         inputStream,
                         item.backend_id,
-                        "otokake_${item.backend_id}.mp3"
                     )
 
                     // 保存した曲のストレージIDを保存する．

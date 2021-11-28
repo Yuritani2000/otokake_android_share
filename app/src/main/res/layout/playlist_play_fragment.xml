@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".PlaylistPlayFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="293dp"
+        android:background="@drawable/dialog_background"
+        android:scaleType="fitCenter">
+
+        <ImageButton
+            android:id="@+id/crossButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="#00000000"
+            android:scaleType="centerCrop"
+            android:src="@drawable/cross"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="166dp"
+            android:layout_height="150dp"
+            android:src="@drawable/logo"
+            app:layout_constraintStart_toEndOf="@+id/crossButton"
+            app:layout_constraintTop_toBottomOf="@+id/crossButton" />
+
+        <ImageButton
+            android:id="@+id/startButton"
+            android:layout_width="240dp"
+            android:layout_height="58dp"
+            android:layout_marginStart="108dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="#00000000"
+            android:scaleType="centerCrop"
+            android:src="@drawable/play_start"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/logo" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>
