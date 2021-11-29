@@ -46,8 +46,9 @@ class AddPlaylistDialogFragment : DialogFragment(){
 
             builder.create()
         }
+        val msg = getString(R.string.add_playlist_exception)
 
-        return dialog?: throw IllegalStateException("アクティビティがnullです")
+        return dialog?: throw IllegalStateException(msg)
     }
 
     override fun onAttach(context: Context) {
