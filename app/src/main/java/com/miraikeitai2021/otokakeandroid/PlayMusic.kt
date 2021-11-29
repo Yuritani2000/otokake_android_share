@@ -41,6 +41,7 @@ class PlayMusic(context: Context) {
                     mediaPlayer!!.playbackParams = speed
                 }, 10)
                 mediaPlayer!!.prepare()
+                mediaPlayer?.setVolume(0.3f, 0.3f)
                 mediaPlayer!!.start()
                 mediaPlayer!!.setOnCompletionListener{ playMusicContinue.callBackPlayMusic(myContext, this) }
             } catch (e: IllegalArgumentException) {

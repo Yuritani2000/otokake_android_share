@@ -132,9 +132,9 @@
 
             <ImageView
                 android:id="@+id/music_album_image_view"
-                android:layout_width="250dp"
+                android:layout_width="249dp"
                 android:layout_height="250dp"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center" />
 
             <LinearLayout
                 android:layout_gravity="center"
@@ -165,6 +165,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:paddingTop="16dp"
+                android:thumb="@drawable/play_seekbar_ball"
 
                 android:layout_marginTop="16dp"/>
 
@@ -190,9 +191,10 @@
 
                 <TextView
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_gravity="right"
-                    android:text="@string/minus"/>
+                    android:text="@string/minus"
+                    android:textColor="@color/black"/>
 
                 <TextView
                     android:id="@+id/music_time_remain_text_view"
@@ -245,112 +247,113 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginBottom="8dp"
-                android:text="@string/connect_to_devices"
-                android:textColor="@color/black"
-                android:textSize="18sp"/>
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_marginTop="32dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/connect_to_devices"
+                    android:textColor="@color/black"
+                    android:textSize="18sp"/>
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:layout_weight="0.5"
-                    android:gravity="center">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-                    <View
-                        android:id="@+id/notify_left_foot_on_the_ground_view"
-                        android:layout_width="40dp"
-                        android:layout_height="5dp"
-                        android:background="#00ffffff"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.5"
+                        android:gravity="center">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/left_device"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"/>
+                        <View
+                            android:id="@+id/notify_left_foot_on_the_ground_view"
+                            android:layout_width="40dp"
+                            android:layout_height="5dp"
+                            android:background="#00ffffff"/>
 
-                    <TextView
-                        android:id="@+id/device_connection_status_left"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/disconnected"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/left_device"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"/>
 
-                    <ImageButton
-                        android:id="@+id/connect_left_device_image_button"
-                        android:layout_width="120dp"
-                        android:layout_height="50dp"
-                        android:layout_marginTop="16dp"
-                        android:background="@drawable/button_reconnect"/>
+                        <TextView
+                            android:id="@+id/device_connection_status_left"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/disconnected"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"/>
+
+                        <ImageButton
+                            android:id="@+id/connect_left_device_image_button"
+                            android:layout_width="120dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="16dp"
+                            android:background="@drawable/button_reconnect"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.5"
+                        android:gravity="center">
+
+                        <View
+                            android:id="@+id/notify_right_foot_on_the_ground_view"
+                            android:layout_width="40dp"
+                            android:layout_height="5dp"
+                            android:background="#00ffffff"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/right_device"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"/>
+
+                        <TextView
+                            android:id="@+id/device_connection_status_right"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/disconnected"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"/>
+
+                        <ImageButton
+                            android:id="@+id/connect_right_device_image_button"
+                            android:layout_width="120dp"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="16dp"
+                            android:background="@drawable/button_reconnect"/>
+                    </LinearLayout>
                 </LinearLayout>
+                    <!--このBluetooth_EVENTボタンは後で消す必要がある．-->
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:layout_weight="0.5"
-                    android:gravity="center">
-
-                    <View
-                        android:id="@+id/notify_right_foot_on_the_ground_view"
-                        android:layout_width="40dp"
-                        android:layout_height="5dp"
-                        android:background="#00ffffff"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/right_device"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"/>
-
-                    <TextView
-                        android:id="@+id/device_connection_status_right"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/disconnected"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"/>
-
-                    <ImageButton
-                        android:id="@+id/connect_right_device_image_button"
-                        android:layout_width="120dp"
-                        android:layout_height="50dp"
-                        android:layout_marginTop="16dp"
-                        android:background="@drawable/button_reconnect"/>
-                </LinearLayout>
+                <!--<Button
+                    android:id="@+id/bluetooth_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_gravity="center"
+                    android:text="@string/bluetooth_event_string"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/stop_button" /> -->
             </LinearLayout>
-                <!--このBluetooth_EVENTボタンは後で消す必要がある．-->
-            <Button
-                android:id="@+id/bluetooth_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_gravity="center"
-                android:text="@string/bluetooth_event_string"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/stop_button" />
-        </LinearLayout>
         </LinearLayout>
 
 </ScrollView>

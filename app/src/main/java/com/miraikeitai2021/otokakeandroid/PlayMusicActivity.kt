@@ -123,7 +123,7 @@ class PlayMusicActivity : AppCompatActivity() {
 //        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
 //        binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.musicPlayAndPauseImageButton.setOnClickListener { tappedPlayAndPauseButton(storageIdList) }
-        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
+//        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
         binding.musicRewindImageButton.setOnClickListener { tappedRewindButton() }
         binding.musicSkipImageButton.setOnClickListener { tappedSkipButton() }
         binding.backButton.setOnClickListener { tappedBackButton() }
@@ -581,7 +581,7 @@ class PlayMusicActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var returnVal = true
 
-        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
+//        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
 
         when(item.itemId) {
             android.R.id.home -> {

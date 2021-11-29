@@ -310,6 +310,8 @@ class GattCallback(private val context: Context, private val bluetoothConnection
         }
     }
 
+    val gap = arrayOf(0, 0)
+
     // 足が地面についているかどうかを示す変数．
     private var isFootOnTheGround = false
 
@@ -326,8 +328,12 @@ class GattCallback(private val context: Context, private val bluetoothConnection
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
 
+                gap[0] = gap[1]
+                gap[1] = sensorValue1
+
                 // 「前回の計測出足が地面についていな状態(0..500の範囲外)」かつ，今回の計測で足が地面についている状態(0..500の範囲内)であったら，足が着いた瞬間として検知
-                if(!isFootOnTheGround && sensorValue1 in 0..500){
+//                if(!isFootOnTheGround && sensorValue1 in 0..500){
+                if(gap[0] in 2000..4096 && (gap[0] - gap[1]) > 1000){
                     Log.d("debug", "seonsorValue1: $sensorValue1")
                     val footOnTheGroundMsg = bluetoothConnectionHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                     footOnTheGroundMsg.sendToTarget()

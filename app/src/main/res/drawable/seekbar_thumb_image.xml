@@ -1,0 +1,13 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <size
+                android:height="16dp"
+                android:width="16dp"/>
+
+            <solid android:color="@android:color/transparent"/>
+        </shape>
+    </item>
+    <item android:drawable="@drawable/seekbar_icon_game_mode"/>
+
+</layer-list>
