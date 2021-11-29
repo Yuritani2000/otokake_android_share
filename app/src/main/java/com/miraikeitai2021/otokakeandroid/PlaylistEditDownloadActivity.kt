@@ -40,6 +40,8 @@ class PlaylistEditDownloadActivity : AppCompatActivity() {
         val db3Dao = db3.MiddleListDao()
 
         val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
+        val listMode :Int = intent.getIntExtra("list_mode", 0)
+
         supportActionBar?.title = db1Dao.getTitle(playlistId) //ツールバーのタイトルを変更
 
         var musicDataList = db2Dao.getAll() //データベースの全曲取得
@@ -47,9 +49,37 @@ class PlaylistEditDownloadActivity : AppCompatActivity() {
         //曲をダウンロード済みリストと未ダウンロードリストに分ける．
         var downloadMusicList: MutableList<Music> = arrayListOf()
 
-        for(music in musicDataList){
-            if(music.storage_id != null) {
-                downloadMusicList.add(music)
+        //PlaylistEditActivityで押されたボタンに応じて，表示するリストを変える．
+        val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf") //カスタムフォント設定
+        val textView4 = findViewById<TextView>(R.id.textView4)
+        textView4?.typeface = customFont
+
+        when(listMode){
+            1 -> {
+                //リストの名前を表示
+                textView4?.text = "ダウンロード済み"
+
+                //ダウンロード済みのリストを表示する
+                for (music in musicDataList) {
+                    if (music.storage_id != null) {
+                        downloadMusicList.add(music)
+                    }
+                }
+            }
+            2 ->{
+                //リストの名前を表示
+                textView4?.text = "未ダウンロード"
+
+                //未ダウンロードのリストを表示する
+                for (music in musicDataList) {
+                    if (music.storage_id == null) {
+                        downloadMusicList.add(music)
+                    }
+                }
+            }
+            else -> {
+                Toast.makeText(this,"リストを表示できません", Toast.LENGTH_LONG).show()
+                finish()
             }
         }
 
@@ -82,15 +112,14 @@ class PlaylistEditDownloadActivity : AppCompatActivity() {
         val backButton = findViewById<ImageButton>(R.id.back_edit_image_button_view)
         backButton.setOnClickListener {
             //インテント処理
-            val intent = Intent(this@PlaylistEditDownloadActivity, PlaylistEditActivity::class.java)
-            intent.putExtra("playlist_id",playlistId)
-            startActivityForResult(intent, 9)
-            //finish()
+            //val intent = Intent(this@PlaylistEditDownloadActivity, PlaylistEditActivity::class.java)
+            //intent.putExtra("playlist_id",playlistId)
+            //startActivityForResult(intent, 9)
+            finish()
         }
 
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input2)
-        val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf")
         inputButton.typeface = customFont
         inputButton.setOnClickListener {
 
@@ -160,6 +189,7 @@ class PlaylistEditDownloadActivity : AppCompatActivity() {
         selectMusicText = findViewById<TextView>(R.id.select_music_text_view)
         selectMusicText?.typeface = customFont
         selectMusicText?.text = "${selectCount}曲選択中"
+
     }
 
     //戻るボタンクリック時(無効中)

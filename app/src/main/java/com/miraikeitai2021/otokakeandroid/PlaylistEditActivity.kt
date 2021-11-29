@@ -1,6 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -24,6 +25,8 @@ class PlaylistEditActivity : AppCompatActivity() {
     private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへの書き込み許可に利用する定数
     private var selectCount = 0 //選択している曲の数をカウントする変数
     private var selectMusicText: TextView? = null //選択中の曲数を表示するtextViewインスタンス
+    private val REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY = 1003
+    private var backEditDownloadFlag = 0 // PlaylistEditActivityから戻って来ているかを確かめるフラグ.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -211,7 +214,8 @@ class PlaylistEditActivity : AppCompatActivity() {
             //インテント処理
             val intent = Intent(this@PlaylistEditActivity, PlaylistEditDownloadActivity::class.java)
             intent.putExtra("playlist_id",playlistId)
-            startActivityForResult(intent, 9)
+            intent.putExtra("list_mode", 1)
+            startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
         }
 
         //未ダウンロードの全て見るボタンクリック時
@@ -219,9 +223,10 @@ class PlaylistEditActivity : AppCompatActivity() {
         buttonView3.typeface = customFont
         buttonView3.setOnClickListener {
             //インテント処理
-            val intent = Intent(this@PlaylistEditActivity, PlaylistEditActivity::class.java)
+            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDownloadActivity::class.java)
             intent.putExtra("playlist_id",playlistId)
-            startActivityForResult(intent, 9)
+            intent.putExtra("list_mode", 2)
+            startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
         }
 
         //選択中の曲数を表示
@@ -464,6 +469,41 @@ class PlaylistEditActivity : AppCompatActivity() {
             }
             else -> return
         }
+    }
+
+   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY -> {
+                //そのままActivityを閉じる．
+                finish()
+
+                val intent = intent
+
+                //activity再起動
+                startActivity(intent)
+            }
+        }
+    }
+
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//
+//        if (requestCode != 9) { return }   //戻る以外で起動したとき(その場合はない想定だけど)
+//
+//        if (resultCode == Activity.RESULT_CANCELED) {   //戻るボタンで起動したとき
+//            val intent = intent
+//            finish()
+//            startActivity(intent)   //このActivityを再起動して画面を更新してる
+//        }
+//    }
+
+    fun getBackEditDownloadFlag(): Int{
+        return backEditDownloadFlag
+    }
+
+    fun resetBackEditDownloadFlag(){
+        backEditDownloadFlag = 0
     }
 }
 
