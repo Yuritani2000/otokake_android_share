@@ -12,12 +12,13 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 
 class PlaylistPlayActivity : AppCompatActivity() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,8 +140,23 @@ class PlaylistPlayActivity : AppCompatActivity() {
 
             //曲クリック時の処理
             holder.constraintLayout.setOnClickListener {
+                val data: Array<Int> = db3Dao.tap(playlist_id,item.backend_id)   //タップした曲以降のバックエンドIDを取得
+                var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
 
-                PlaylistPlayFragment().show(supportFragmentManager,PlaylistPlayFragment::class.simpleName)
+                for (i in data.indices){    //バックエンドIDの配列からストレージIDの配列を取得
+                    storageIdList += db2Dao.getStorageId(data[i])
+                    Log.d("debug", "storage id list 0: ${storageIdList[0]}")
+                }
+
+                val fm: FragmentManager = supportFragmentManager
+                val ft: FragmentTransaction = fm.beginTransaction()
+                val fragment: PlaylistPlayFragment = PlaylistPlayFragment()
+                val bundle: Bundle = Bundle()
+                bundle.putString("musicTitle",item.title)
+                bundle.putString("musicArtist",item.artist)
+                bundle.putSerializable("storageIdList",storageIdList)
+                fragment.arguments = bundle
+                fragment.show(supportFragmentManager,PlaylistPlayFragment::class.simpleName)
 
 //                val data: Array<Int> = db3Dao.tap(playlist_id,item.backend_id)   //タップした曲以降のバックエンドIDを取得
 //                var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
