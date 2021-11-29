@@ -50,8 +50,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         //RecyclerViewに区切り線オブジェクトを設定
         recyclerview.addItemDecoration(decorator)
 
-        //supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
         val customFont = Typeface.createFromAsset(getAssets(), "Kaisotai-Next-UP-B.ttf")
         val screenTitle = findViewById<TextView>(R.id.playlistScreenTitle)
         screenTitle.setTypeface(customFont)
@@ -103,30 +101,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         adapter.notifyDataSetChanged()
 
     }
-
-//    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-//        menuInflater.inflate(R.menu.menu_options_list, menu)
-//        return true
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        var returnVal = true
-//
-//        when (item.itemId) {
-//            android.R.id.home -> {
-//                finish()
-//            }
-//            R.id.add -> {
-//                val dialogFragment = AddPlaylistDialogFragment()
-//                dialogFragment.show(supportFragmentManager, "AddPlaylistDialogFragment")
-//            }
-//            else -> {
-//                returnVal = super.onOptionsItemSelected(item)
-//            }
-//        }
-//
-//        return returnVal
-//    }
 
     private inner class RecyclerListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
