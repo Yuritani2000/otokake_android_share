@@ -28,9 +28,9 @@ class DisplayScoreActivity : AppCompatActivity() {
             val score = bestPoint * 500 + normalPoint * 200
 
             binding.scoreTextView.text = "score: $score"
-            binding.bestScoreTextView.text = "best: $bestPoint"
-            binding.nomalScoreTextView.text = "normal: $normalPoint"
-            binding.badScoreTextView.text = "bad: $badPoint"
+            binding.bestScoreTextView.text = "best: $bestPoint * 500"
+            binding.nomalScoreTextView.text = "normal: $normalPoint * 200"
+            binding.badScoreTextView.text = "bad: $badPoint * 0"
         }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
