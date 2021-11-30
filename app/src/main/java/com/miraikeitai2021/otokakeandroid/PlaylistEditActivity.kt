@@ -1,7 +1,6 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -26,7 +25,6 @@ class PlaylistEditActivity : AppCompatActivity() {
     private var selectCount = 0 //選択している曲の数をカウントする変数
     private var selectMusicText: TextView? = null //選択中の曲数を表示するtextViewインスタンス
     private val REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY = 1003
-    private var backEditDownloadFlag = 0 // PlaylistEditActivityから戻って来ているかを確かめるフラグ.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -212,7 +210,7 @@ class PlaylistEditActivity : AppCompatActivity() {
         buttonView2.typeface = customFont
         buttonView2.setOnClickListener {
             //インテント処理
-            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDownloadActivity::class.java)
+            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDetailActivity::class.java)
             intent.putExtra("playlist_id",playlistId)
             intent.putExtra("list_mode", 1)
             startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
@@ -223,16 +221,16 @@ class PlaylistEditActivity : AppCompatActivity() {
         buttonView3.typeface = customFont
         buttonView3.setOnClickListener {
             //インテント処理
-            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDownloadActivity::class.java)
+            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDetailActivity::class.java)
             intent.putExtra("playlist_id",playlistId)
             intent.putExtra("list_mode", 2)
             startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
         }
 
         //選択中の曲数を表示
-        selectMusicText = findViewById<TextView>(R.id.select_music_text_view)
+        selectMusicText = findViewById(R.id.select_music_text_view)
         selectMusicText?.typeface = customFont
-        selectMusicText?.text = "${selectCount}曲選択中"
+        selectMusicText?.text = "$selectCount"
 
         //textView2のフォント指定
         val textView2 = findViewById<TextView>(R.id.textView2)
@@ -296,7 +294,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             //selectCountの値を現在チェックが入れられている曲の数に設定
             if(holder.checkBox.isChecked){
                 selectCount += 1
-                selectMusicText?.text = "${selectCount}曲選択中"
+                selectMusicText?.text = "$selectCount"
             }
 
             //ビューホルダー中のImageViewにジャケット画像を設定
@@ -371,7 +369,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             val onClickMusicDownloadDialogCancelButton = fun(){
                 // selectCountの値を1減らす
                 selectCount -= 1
-                selectMusicText?.text = "${selectCount}曲選択中"
+                selectMusicText?.text = "$selectCount"
 
                 // DBの中間テーブルから削除
                 db3Dao.deleteMusic(playlist_id,item.backend_id)
@@ -407,7 +405,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録)時
                     // selectCountの値を1増やす
                     selectCount += 1
-                    selectMusicText?.text = "${selectCount}曲選択中"
+                    selectMusicText?.text = "$selectCount"
 
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
@@ -418,7 +416,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 else{   //チェック入ってる(削除)時
                     // selectCountの値を1減らす
                     selectCount -= 1
-                    selectMusicText?.text = "${selectCount}曲選択中"
+                    selectMusicText?.text = "$selectCount"
 
                     // DBの中間テーブルから削除
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
@@ -431,7 +429,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 if(!holder.checkBox.isChecked){  //チェック入ってない(登録解除)時
                     // selectCountの値を1減らす
                     selectCount -= 1
-                    selectMusicText?.text = "${selectCount}曲選択中"
+                    selectMusicText?.text = "$selectCount"
 
                     // DBの中間テーブルから削除
                     db3Dao.deleteMusic(playlist_id,item.backend_id)
@@ -439,7 +437,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                 else{   //チェック入ってる(登録)時
                     // selectCountの値を1増やす
                     selectCount += 1
-                    selectMusicText?.text = "${selectCount}曲選択中"
+                    selectMusicText?.text = "$selectCount"
 
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
@@ -489,26 +487,6 @@ class PlaylistEditActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
-    }
-
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        super.onActivityResult(requestCode, resultCode, data)
-//
-//        if (requestCode != 9) { return }   //戻る以外で起動したとき(その場合はない想定だけど)
-//
-//        if (resultCode == Activity.RESULT_CANCELED) {   //戻るボタンで起動したとき
-//            val intent = intent
-//            finish()
-//            startActivity(intent)   //このActivityを再起動して画面を更新してる
-//        }
-//    }
-
-    fun getBackEditDownloadFlag(): Int{
-        return backEditDownloadFlag
-    }
-
-    fun resetBackEditDownloadFlag(){
-        backEditDownloadFlag = 0
     }
 }
 

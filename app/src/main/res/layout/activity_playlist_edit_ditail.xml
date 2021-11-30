@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/tr_haikei"
-    tools:context=".PlaylistEditDownloadActivity">
+    tools:context=".PlaylistEditDetailActivity">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/RecyclerView2"
@@ -58,16 +58,31 @@
         app:layout_constraintTop_toBottomOf="@+id/imageView"
         app:srcCompat="@drawable/button_back_arrow" />
 
-    <TextView
-        android:id="@+id/select_music_text_view"
+    <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="20dp"
         android:layout_marginTop="10dp"
-        android:text="@string/select_music_edit_text_view"
-        android:textSize="18sp"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/input2" />
+        app:layout_constraintTop_toBottomOf="@+id/input2">
+
+        <TextView
+            android:id="@+id/select_music_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/select_music_edit_text_view"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/textView5"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/music_select_string"
+            android:textSize="18sp"/>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/textView4"
@@ -78,7 +93,7 @@
         android:text="@string/layout_list_download_text_view"
         android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/select_music_text_view" />
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

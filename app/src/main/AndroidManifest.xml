@@ -22,7 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OtokakeAndroid">
         <activity
-            android:name=".PlaylistEditDownloadActivity"
+            android:name=".PlaylistEditDetailActivity"
             android:exported="true" />
         <activity
             android:name=".MainMenuActivity"
