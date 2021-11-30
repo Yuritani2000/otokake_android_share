@@ -332,6 +332,11 @@ class PlaylistEditActivity : AppCompatActivity() {
                         //リサイクルビューのImageViewを更新
                         holder.jacketImage.setImageBitmap(storageMusic.getImage(storageId, this@PlaylistEditActivity))
 
+                        //Activityの更新．
+                        finish()
+                        val intent = intent
+                        //activity再起動
+                        startActivity(intent)
                     }else{
                         Log.e("debug", "could not get ")
                     }
