@@ -14,7 +14,6 @@ class PlayMusic(context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
-    private val playMusicContinue = PlayMusicContinue()
     private lateinit var playBackParams: PlaybackParams //変更箇所 最初に宣言して, 32行目で値を入れる．その後33行目，83行目で同じものを使用する．
 
     /**
@@ -22,7 +21,7 @@ class PlayMusic(context: Context) {
      * musicUri：ストレージから再生する音楽を指定するURI
      * musicSpeed：加工前の曲のbpm
      */
-    fun startMusic(musicUri: Uri){ //fun startMusic(musicUri: Uri, musicSpeed: Float)
+    fun startMusic(musicUri: Uri, playMusicContinue: PlayMusicContinue){ //fun startMusic(musicUri: Uri, musicSpeed: Float)
         if(mediaPlayer == null){
 
             //曲の再生開始

@@ -566,7 +566,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                     if(musicProgress != -1){
                         val minute = musicProgress / 1000 / 60
                         val second = musicProgress / 1000 % 60
-                        binding.musicTimeProgressTextView.text = "$minute:${"%02d".format(second)}"
+                        binding.musicTimeProgressMinuteTextView.text = minute.toString()
+                        binding.musicTimeProgressSecondTextView.text = "%02d".format(second)
                     }
 
                     // 曲の残りの長さを見てUIを更新する．
@@ -575,7 +576,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                         if(remainingTimeMilliSeconds >= 0){
                             val remainingMinute = remainingTimeMilliSeconds / 1000 / 60
                             val remainingSecond = remainingTimeMilliSeconds / 1000 % 60
-                            binding.musicTimeRemainTextView.text = "$remainingMinute:${"%02d".format(remainingSecond)}"
+                            binding.musicTimeRemainMinuteTextView.text = remainingMinute.toString()
+                            binding.musicTimeRemainSecondTextView.text = "%02d".format(remainingSecond)
                         }
                     }
 

@@ -23,7 +23,7 @@ class PlayMusicContinue() {
         myStorageIdList = storageIdList
         resetOrder()
 
-        playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(),context.contentResolver))
+        playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(),context.contentResolver), this)
     }
 
     /**
@@ -63,7 +63,7 @@ class PlayMusicContinue() {
             }
             if(playMusic.getMediaPlayer() == null){
                 Log.d("debug", "play next track")
-                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
+                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver), this)
             }
         }
     }
@@ -86,7 +86,7 @@ class PlayMusicContinue() {
                 playMusic.stopMusic()
             }
             if(playMusic.getMediaPlayer() == null){
-                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver))
+                playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(), context.contentResolver), this)
             }
         }
     }
