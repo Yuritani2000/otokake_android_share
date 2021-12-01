@@ -31,15 +31,21 @@ class DisplayScoreActivity : AppCompatActivity() {
 
             val score = bestPoint * 500 + normalPoint * 200
 
-            binding.scoreTextView.text = "score: $score"
-            binding.bestScoreTextView.text = "best: $bestPoint * 500"
-            binding.nomalScoreTextView.text = "normal: $normalPoint * 200"
-            binding.badScoreTextView.text = "bad: $badPoint * 0"
+            binding.scoreTextView.text = "$score"
+            binding.perfectScoreTextView.text = "$bestPoint"
+            binding.goodScoreTextView.text = "$normalPoint"
+            binding.missScoreTextView.text = "$badPoint"
         }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        //OKボタンを押したときの処理
+        binding.scoreBackButtonView.setOnClickListener{
+            finish()
+        }
     }
 
+    //アクションバーの戻るボタンを押したときの処理(無効中)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if(item.itemId == android.R.id.home){
             finish()

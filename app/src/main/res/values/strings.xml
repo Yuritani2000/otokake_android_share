@@ -35,8 +35,14 @@
     <string name="get_music_list_failed_message">曲一覧の取得に失敗しました．もう一度お試しください．</string>
     <string name="ok">OK</string>
     <string name="score_string">score</string>
-    <string name="best_score_string">score_best</string>
-    <string name="normal_score_string">score_normal</string>
-    <string name="bad_score_string">score_bad</string>
+    <string name="best_score_string">score_perfect</string>
+    <string name="normal_score_string">score_good</string>
+    <string name="bad_score_string">score_miss</string>
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
+    <string name="todo_string">TODO</string>
+    <string name="game_score_music_name_string">曲1</string>
+    <string name="game_score_total_score_string">今回のスコア</string>
+    <string name="perfect_string">perfect</string>
+    <string name="good_string">good</string>
+    <string name="miss_string">miss</string>
 </resources>
