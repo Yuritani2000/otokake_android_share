@@ -213,7 +213,7 @@ class PlaylistEditDetailActivity : AppCompatActivity() {
             //レイアウトインフレータを取得
             val inflater = LayoutInflater.from(this@PlaylistEditDetailActivity)
             //row.xmlをインフレ―トし、1行分の画面部品とする
-            val view = inflater.inflate(R.layout.playlist_edit_download_row, parent, false)
+            val view = inflater.inflate(R.layout.playlist_edit_detail_row, parent, false)
             //生成したビューホルダをリターン
             return ViewHolder(view)
         }
