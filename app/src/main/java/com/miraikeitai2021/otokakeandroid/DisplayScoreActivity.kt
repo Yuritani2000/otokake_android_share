@@ -18,6 +18,10 @@ class DisplayScoreActivity : AppCompatActivity() {
         binding = ActivityDisplayScoreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        //アクションバー非表示
+        val actionBar: androidx.appcompat.app.ActionBar? = supportActionBar
+        actionBar?.hide()
+
         val pointArray = intent.getIntArrayExtra("pointArray")
 
         pointArray?.let{
