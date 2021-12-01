@@ -126,7 +126,7 @@
             android:text="@string/good_string"
             android:textSize="18sp" />
 
-        <Space android:layout_width="41dip"
+        <Space android:layout_width="40dip"
             android:layout_height="match_parent"/>
 
         <TextView

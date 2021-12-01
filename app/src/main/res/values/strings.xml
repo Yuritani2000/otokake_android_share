@@ -42,8 +42,8 @@
     <string name="todo_string">TODO</string>
     <string name="game_score_music_name_string">曲1</string>
     <string name="game_score_total_score_string">今回のスコア</string>
-    <string name="perfect_string">perfect</string>
-    <string name="good_string">good</string>
-    <string name="miss_string">miss</string>
+    <string name="perfect_string">Perfect</string>
+    <string name="good_string">Good</string>
+    <string name="miss_string">Miss</string>
     <string name="game_score_get_storage_id_string">曲の情報が取得できませんでした．</string>
 </resources>
