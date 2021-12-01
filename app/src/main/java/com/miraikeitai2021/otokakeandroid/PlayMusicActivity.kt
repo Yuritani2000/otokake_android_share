@@ -36,11 +36,8 @@ class PlayMusicActivity : AppCompatActivity() {
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
     private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
-    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用する．
-
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
@@ -59,7 +56,7 @@ class PlayMusicActivity : AppCompatActivity() {
 
     // 曲目データベースのインスタンス
     private val musicDatabase = MusicDatabase.getInstance(this)
-    val musicDao = musicDatabase.MusicDao()
+    private val musicDao = musicDatabase.MusicDao()
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,14 +117,13 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************************************
 
-//        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
-//        binding.stopButton.setOnClickListener { tappedStopButton() }
         binding.musicPlayAndPauseImageButton.setOnClickListener { tappedPlayAndPauseButton(storageIdList) }
-//        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
         binding.musicRewindImageButton.setOnClickListener { tappedRewindButton() }
         binding.musicSkipImageButton.setOnClickListener { tappedSkipButton() }
         binding.backButton.setOnClickListener { tappedBackButton() }
         binding.changeFootstepButton.setOnClickListener { view -> tappedChangeFootStepButton(view) }
+        // テスト用．本番環境では無効にする必要がある．
+        binding.bluetoothButton.setOnClickListener { tappedBluetoothButton() }
 
         // アクションバーの非表示
         supportActionBar?.hide()
@@ -193,16 +189,6 @@ class PlayMusicActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(p0: SeekBar?) {}
         })
 
-//        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-//        disconnectLeftDeviceButton.setOnClickListener {
-//            bleConnectionRunnableLeft?.disconnect()
-//        }
-//
-//        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-//        disconnectRightDeviceButton.setOnClickListener {
-//            bleConnectionRunnableLeft?.disconnect()
-//        }
-
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
@@ -216,18 +202,15 @@ class PlayMusicActivity : AppCompatActivity() {
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
         if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             // 曲が停止中かつ，Activityを起動後に初めて再生する場合
-            if (isFirstTimeToPlay && !isPlayingMusic) {
+            if (isFirstTimeToPlay && !playMusic.isPlaying()) {
                 playMusicContinue.orderMusic(storageIdList, this, playMusic)
-                isPlayingMusic = true
                 isFirstTimeToPlay = false
-            } else if (isPlayingMusic) {// 曲が再生中の場合
+            } else if (playMusic.isPlaying()) {// 曲が再生中の場合
                 // 再生を一時停止する
                 playMusic.pauseMusic()
-                isPlayingMusic = false
             }else{// 曲が再生中でない場合
                 // 曲の再生を再開する
                 playMusic.resumeMusic()
-                isPlayingMusic = true
             }
         }
     }
@@ -256,22 +239,6 @@ class PlayMusicActivity : AppCompatActivity() {
             //次の曲を再生する．
             playMusicContinue.callBackPlayMusic(this, playMusic)
         }
-    }
-
-    /**
-     * スタートボタンがクリックされたときの処理
-     */
-    private fun tappedStartButton(storageIdList: Array<Long>){
-        // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
-        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
-            playMusicContinue.orderMusic(storageIdList, this, playMusic)
-        }
-//        //曲をスタートする
-//        val text: TextView = findViewById(R.id.textView)
-//        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
-//        text.setText(contentUri.toString())
-//        playMusic.startMusic(contentUri)
-        //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -332,10 +299,6 @@ class PlayMusicActivity : AppCompatActivity() {
 
               // BPMのTextViewをRunBPMで更新
               binding.runBpmValueTextView.text = "%.1f".format(runBpm)
-//              val text: TextView = findViewById(R.id.textView)
-//              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-//                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
-//                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
           }
         }
     }
@@ -393,31 +356,6 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-     * SensorValueHandlerから圧力の値を受け取った時，圧力の計測値を示すTextViewを更新するラムダ式．
-     * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
-     */
-    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-//        when(positionId){
-//            SENSOR_LEFT_1 ->{
-//                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-//                sensorValueLeft1TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_LEFT_2 ->{
-//                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-//                sensorValueLeft2TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_RIGHT_1 ->{
-//                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-//                sensorValueRight1TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_RIGHT_2 ->{
-//                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-//                sensorValueRight2TextView.text = sensorValue.toString()
-//            }
-//        }
-    }
-
-    /**
      * SensorValueHandlerが足と地面の接触を検知したときに呼び出されるメソッド，
      * こちらも，SensorValueHandlerに渡すためにラムダ式にする．
      */
@@ -438,9 +376,7 @@ class PlayMusicActivity : AppCompatActivity() {
             // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
             val footSoundPool =
                 SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
-            // 再生する足音をres/rawフォルダからもってきて，そのIDを取得．
-//            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-//            // playSoundメソッドは，上記3つのオブジェクトを
+            // playSoundメソッドは，上記3つのオブジェクトを
             val sound = footSoundMap[nowSetFootsteps] as Int
             val soundId = footSoundPool.load(this, sound, 1)
             playFootSound(footSoundPool, soundId)
@@ -532,18 +468,11 @@ class PlayMusicActivity : AppCompatActivity() {
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val bluetoothConnectionHandler = BluetoothConnectionHandler(updateSensorValueTextView, handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
         val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
-    }
-
-    /**
-     * Activityがバックグラウンドに行く時のメソッド．
-     */
-    override fun onPause() {
-        super.onPause()
     }
 
     /**
@@ -567,47 +496,6 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-     * メニューバーを実現するためのメソッド
-     */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_options_play_music, menu)
-        return true
-    }
-
-
-    /**
-     * メニューバーを押した時に呼ばれるメソッド
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var returnVal = true
-
-//        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
-
-        when(item.itemId) {
-            android.R.id.home -> {
-//                finish()
-                tappedBackButton()
-            }
-
-            R.id.boyon -> {
-                nowSetFootsteps = "ボヨン"
-//                footstepsText.text = nowSetFootsteps
-            }
-
-            R.id.japanese_drum ->{
-                nowSetFootsteps = "和太鼓"
-//                footstepsText.text = nowSetFootsteps
-            }
-
-            else -> {
-                returnVal = super.onOptionsItemSelected(item)
-            }
-        }
-
-        return returnVal
-    }
-
-    /**
      * 前の画面に戻るボタンがタップされたときの処理
      */
     private fun tappedBackButton(){
@@ -627,17 +515,16 @@ class PlayMusicActivity : AppCompatActivity() {
                 R.id.boyon -> {
                     nowSetFootsteps = "ボヨン"
                     true
-//                footstepsText.text = nowSetFootsteps
                 }
 
                 R.id.japanese_drum ->{
                     nowSetFootsteps = "和太鼓"
                     true
-//                footstepsText.text = nowSetFootsteps
                 }
                 else -> false
             }
         }
+        // この関数を呼び出すボタンの上に，ポップアップメニューとして足跡の一覧を表示する．
         footStepChangePopup.show()
     }
 
@@ -722,6 +609,4 @@ class PlayMusicActivity : AppCompatActivity() {
             }
         }
     }
-
 }
-

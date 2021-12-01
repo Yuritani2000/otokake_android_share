@@ -142,12 +142,10 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
 //        }
 
         //************************************************************************************
-
-//        binding.startButton.setOnClickListener { tappedStartButton() }
-//        binding.stopButton.setOnClickListener { tappedStopButton() }
-//        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
         binding.backButton.setOnClickListener { tappedBackButton() }
         binding.changeFootstepButton.setOnClickListener { view -> tappedChangeFootStepButton(view) }
+        // テスト用．本番環境では無効にする必要がある．
+        binding.bluetoothButton.setOnClickListener { tappedBluetoothButton() }
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
         fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
@@ -181,7 +179,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         binding.connectLeftDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_LEFT)
+                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
                 }
             }
         }
@@ -190,7 +188,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         binding.connectRightDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_RIGHT)
+                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
                 }
             }
         }
@@ -219,34 +217,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             }
         }
 
-//        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
-//        searchLeftDeviceButton.setOnClickListener {
-//            bluetoothAdapter?.let{
-//                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-//                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
-//                }
-//            }
-//        }
-
-//        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
-//        searchRightDeviceButton.setOnClickListener {
-//            bluetoothAdapter?.let{
-//                if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-//                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
-//                }
-//            }
-//        }
-
-//        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-//        disconnectLeftDeviceButton.setOnClickListener {
-//            bleConnectionRunnableLeft?.disconnect()
-//        }
-
-//        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-//        disconnectRightDeviceButton.setOnClickListener {
-//            bleConnectionRunnableLeft?.disconnect()
-//        }
-
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
@@ -258,11 +228,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
      */
     private fun tappedStartButton(){
         //曲をスタートする
-//        val text: TextView = findViewById(R.id.textView)
         val contentUri = checkMusicUri.checkUri(storageId.toInt(), contentResolver)
-//        text.setText(contentUri.toString())
         playMusicGamemode.startMusic(contentUri)
-        //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -293,13 +260,11 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                 R.id.boyon -> {
                     nowSetFootsteps = "ボヨン"
                     true
-//                footstepsText.text = nowSetFootsteps
                 }
 
                 R.id.japanese_drum ->{
                     nowSetFootsteps = "和太鼓"
                     true
-//                footstepsText.text = nowSetFootsteps
                 }
                 else -> false
             }
@@ -349,16 +314,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         Log.d("debug", "pointArray[1]: ${pointArray[0]}")
         Log.d("debug", "pointArray[2]: ${pointArray[1]}")
         Log.d("debug", "pointArray[3]: ${pointArray[2]}")
-
-
-
-//        //歩調のBpmによって曲の再生速度を変更する
-//        playMusicGamemode.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
-//
-//        val text: TextView = findViewById(R.id.textView)
-//        text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-//                "runBpm: ${checkRunBpm.getRunBpm()}  " +
-//                "musicSpeed: ${playMusicGamemode.getChangedMusicSpeed()}  ")
     }
 
     /**
@@ -416,31 +371,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    /**
-     * SensorValueHandlerから圧力の値を受け取った時，圧力の計測値を示すTextViewを更新するラムダ式．
-     * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
-     */
-    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-//        when(positionId){
-//            SENSOR_LEFT_1 ->{
-//                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-//                sensorValueLeft1TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_LEFT_2 ->{
-//                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-//                sensorValueLeft2TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_RIGHT_1 ->{
-//                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-//                sensorValueRight1TextView.text = sensorValue.toString()
-//            }
-//            SENSOR_RIGHT_2 ->{
-//                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-//                sensorValueRight2TextView.text = sensorValue.toString()
-//            }
-//        }
     }
 
     /**
@@ -574,9 +504,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val bluetoothConnectionHandler = BluetoothConnectionHandler(updateSensorValueTextView, handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
-        //変更箇所=========================================
-        //==================================================
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
         val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
@@ -601,46 +529,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             "ボヨン" to R.raw.test_boyon,
             "和太鼓" to R.raw.test_japanese_drum
         )
-    }
-
-    /**
-     * メニューバーを実現するためのメソッド
-     */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_options_play_music, menu)
-        return true
-    }
-
-
-    /**
-     * メニューバーを押した時に呼ばれるメソッド
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var returnVal = true
-
-//        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
-
-        when(item.itemId) {
-            android.R.id.home -> {
-                finish()
-            }
-
-            R.id.boyon -> {
-                nowSetFootsteps = "ボヨン"
-//                footstepsText.text = nowSetFootsteps
-            }
-
-            R.id.japanese_drum ->{
-                nowSetFootsteps = "和太鼓"
-//                footstepsText.text = nowSetFootsteps
-            }
-
-            else -> {
-                returnVal = super.onOptionsItemSelected(item)
-            }
-        }
-
-        return returnVal
     }
 
     fun displayScore(){

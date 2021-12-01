@@ -62,7 +62,7 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
     }
 
     /**
-     * 白戸追加．曲の全体の長さを取得する．
+     * 曲の全体の長さを取得する．
      */
     fun getDuration(): Int{
         mediaPlayer?.let{
@@ -72,7 +72,7 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
     }
 
     /**
-     * 白戸追加．曲の現在の再生位置を取得する．
+     * 曲の現在の再生位置を取得する．
      */
     fun getProgress(): Int{
         mediaPlayer?.let{

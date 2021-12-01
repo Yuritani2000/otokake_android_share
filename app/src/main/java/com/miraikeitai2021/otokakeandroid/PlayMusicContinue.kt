@@ -45,13 +45,13 @@ class PlayMusicContinue() {
         // orderの値を100ms起きに参照して曲情報を持ってくることにした．
         // つまり，orderの値が配列の範囲外を指すと例外が起こるので，
         // orderの値はゼロから配列長-1の範囲外にならないようにする．
-        if(order + 1>= listSize){
+        if(order + 1>= listSize){   // 最後の曲の再生を終了するときの処理
             if(playMusic.getMediaPlayer() != null){
-                // スキップボタンから呼び出された場合(曲がまだ終わっていない場合)，動作を無効にする．
+                // この関数は，スキップボタンからも直接呼び出されるようにした．
+                // 最後の曲でスキップボタンを押した場合，曲がまだ終わっていないので，動作を無効にする．
                 if(playMusic.getProgress() >= playMusic.getDuration()){
                     // 最後の曲の再生が終わった後に好きな位置に戻れるように，stopではなくpauseにしておく．
                     playMusic.pauseMusic()
-//                    playMusic.stopMusic()
                 }
             }
         }else{
