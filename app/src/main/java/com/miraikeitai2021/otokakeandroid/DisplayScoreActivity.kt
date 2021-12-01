@@ -24,8 +24,8 @@ class DisplayScoreActivity : AppCompatActivity() {
         val storageId = intent.getLongExtra("storageId", -1)
 
         //曲目データベースを使用
-        val db2 = MusicDatabase.getInstance(this)
-        val db2Dao = db2.MusicDao()  //Daoと接続
+        val musicDatabase = MusicDatabase.getInstance(this)
+        val musicDao = musicDatabase.MusicDao()  //Daoと接続
 
         //アクションバー非表示
         val actionBar: androidx.appcompat.app.ActionBar? = supportActionBar
@@ -56,8 +56,15 @@ class DisplayScoreActivity : AppCompatActivity() {
         val storageMusic = StorageMusic()
         binding.imageView2.setImageBitmap(storageMusic.getImage(storageId,this))
 
-        //曲名を設定
-        binding.textView2.text = db2Dao.getTitle(storageId)
+        //曲目テーブルからストレージIDを基に曲データを取得
+        val musicInfo = musicDao.getMusicFromStorageId(storageId)
+        musicInfo?.let{
+            //曲名を設定
+            binding.textView2.text = musicInfo.title
+
+            //アーティストを設定
+            binding.textView5.text = musicInfo.artist
+        }
 
         //OKボタンを押したときの処理
         binding.scoreBackButtonView.setOnClickListener{

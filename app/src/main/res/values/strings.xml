@@ -46,4 +46,5 @@
     <string name="good_string">Good</string>
     <string name="miss_string">Miss</string>
     <string name="game_score_get_storage_id_string">曲の情報が取得できませんでした．</string>
+    <string name="game_score_artist">アーティスト</string>
 </resources>
