@@ -45,4 +45,5 @@
     <string name="perfect_string">perfect</string>
     <string name="good_string">good</string>
     <string name="miss_string">miss</string>
+    <string name="game_score_get_storage_id_string">曲の情報が取得できませんでした．</string>
 </resources>

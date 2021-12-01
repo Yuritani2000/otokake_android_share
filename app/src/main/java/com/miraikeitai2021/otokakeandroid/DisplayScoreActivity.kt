@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
+import android.widget.Toast
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityDisplayScoreBinding
 
 class DisplayScoreActivity : AppCompatActivity() {
@@ -18,11 +19,23 @@ class DisplayScoreActivity : AppCompatActivity() {
         binding = ActivityDisplayScoreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        //インテント元から値受け取り
+        val pointArray = intent.getIntArrayExtra("pointArray")
+        val storageId = intent.getLongExtra("storageId", -1)
+
+        //曲目データベースを使用
+        val db2 = MusicDatabase.getInstance(this)
+        val db2Dao = db2.MusicDao()  //Daoと接続
+
         //アクションバー非表示
         val actionBar: androidx.appcompat.app.ActionBar? = supportActionBar
         actionBar?.hide()
 
-        val pointArray = intent.getIntArrayExtra("pointArray")
+        //ストレージIdが取得できなかった時はActivityを終了する．
+        if(storageId.toInt() == -1){
+            Toast.makeText(this, R.string.game_score_get_storage_id_string, Toast.LENGTH_SHORT).show()
+            finish()
+        }
 
         pointArray?.let{
             val bestPoint = it[0]
@@ -38,6 +51,13 @@ class DisplayScoreActivity : AppCompatActivity() {
         }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        //メタデータからジャケット画像を設定
+        val storageMusic = StorageMusic()
+        binding.imageView2.setImageBitmap(storageMusic.getImage(storageId,this))
+
+        //曲名を設定
+        binding.textView2.text = db2Dao.getTitle(storageId)
 
         //OKボタンを押したときの処理
         binding.scoreBackButtonView.setOnClickListener{
