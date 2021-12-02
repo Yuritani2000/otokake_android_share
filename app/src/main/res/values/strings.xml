@@ -1,7 +1,7 @@
 <resources>
     <string name="btn_list_add">Add PlayList</string>
-    <string name="dialog_title">新規プレイリスト</string>
-    <string name="dialog_msg">新規プレイリストの名前を入力してください</string>
+    <string name="dialog_title">新規再生リスト</string>
+    <string name="dialog_msg">新規再生リストのタイトルを入力してください</string>
     <string name="dialog_btn_ok">作成</string>
     <string name="dialog_btn_ng">キャンセル</string>
     <string name="tentative_text">テスト</string>
@@ -39,4 +39,6 @@
     <string name="normal_score_string">score_normal</string>
     <string name="bad_score_string">score_bad</string>
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
+    <string name="playlist_list">再生リスト一覧</string>
+    <string name="add_playlist_exception">アクティビティがnullです</string>
 </resources>
