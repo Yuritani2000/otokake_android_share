@@ -50,10 +50,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         //RecyclerViewに区切り線オブジェクトを設定
         recyclerview.addItemDecoration(decorator)
 
-//        val customFont = Typeface.createFromAsset(getAssets(), "Kaisotai-Next-UP-B.ttf")
-//        val screenTitle = findViewById<TextView>(R.id.playlistScreenTitle)
-//        screenTitle.setTypeface(customFont)
-
         val returnButton = findViewById<ImageButton>(R.id.returnButton)
         returnButton.setOnClickListener{
             finish()
