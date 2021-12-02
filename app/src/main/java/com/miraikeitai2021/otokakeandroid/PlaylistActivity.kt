@@ -23,10 +23,12 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist)
 
-        val actionbar = supportActionBar
-        if(actionbar != null){
-            actionbar.hide()
-        }
+//        val actionbar = supportActionBar
+//        if(actionbar != null){
+//            actionbar.hide()
+//        }
+
+        supportActionBar?.hide()
 
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
         val db1Dao = db1.PlaylistDao()  //Daoと接続
@@ -37,7 +39,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         getPlaylist(adapter, db1Dao)
 
         //RecyclerViewを取得
-        val recyclerview = findViewById<RecyclerView>(R.id.playlist)
+        val recyclerview = findViewById<RecyclerView>(R.id.playlist_recycler_view)
         //LinearLayoutManagerオブジェクトを生成
         val layout = LinearLayoutManager(this@PlaylistActivity)
         //RecyclerViewにレイアウトマネージャーとしてLinearLayoutを設定
@@ -50,12 +52,12 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         //RecyclerViewに区切り線オブジェクトを設定
         recyclerview.addItemDecoration(decorator)
 
-        val returnButton = findViewById<ImageButton>(R.id.returnButton)
+        val returnButton = findViewById<ImageButton>(R.id.return_button)
         returnButton.setOnClickListener{
             finish()
         }
 
-        val addButton = findViewById<ImageButton>(R.id.addButton)
+        val addButton = findViewById<ImageButton>(R.id.add_button)
         addButton.setOnClickListener{
             val dialogFragment = AddPlaylistDialogFragment()
             dialogFragment.show(supportFragmentManager, "AddPlaylistDialogFragment")
@@ -100,8 +102,8 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
     private inner class RecyclerListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
-        var listNameRow: TextView = itemView.findViewById(R.id.listTitle)
-        var deleteButtonRow: ImageButton = itemView.findViewById(R.id.deleteListButton)
+        var listNameRow: TextView = itemView.findViewById(R.id.list_title)
+        var deleteButtonRow: ImageButton = itemView.findViewById(R.id.delete_list_button)
 
     }
 
@@ -126,6 +128,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
             //ビューホルダ中のTextViewに設定
             holder.listNameRow.text = listTitle
 
+            //ここのカスタムフォントはアプリ全体に適応されるため将来削除
             val customFont = Typeface.createFromAsset(getAssets(), "Kaisotai-Next-UP-B.ttf")
             holder.listNameRow.setTypeface(customFont)
 

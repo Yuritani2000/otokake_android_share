@@ -8,7 +8,7 @@
     android:background="@drawable/background">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/playlist"
+        android:id="@+id/playlist_recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scrollbars="vertical"
@@ -16,11 +16,11 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/returnButton"
+        app:layout_constraintTop_toBottomOf="@+id/return_button"
         app:layout_constraintVertical_bias="1.0" />
 
     <ImageButton
-        android:id="@+id/returnButton"
+        android:id="@+id/return_button"
         android:layout_width="75dp"
         android:layout_height="75dp"
         android:layout_marginTop="10dp"
@@ -30,11 +30,11 @@
         android:scaleType="centerCrop"
         app:layout_constraintBottom_toTopOf="@+id/playlist"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playlistListHeader"
+        app:layout_constraintTop_toBottomOf="@+id/playlist_list_header_image_view"
         app:srcCompat="@drawable/return_button_icon" />
 
     <ImageButton
-        android:id="@+id/addButton"
+        android:id="@+id/add_button"
         android:layout_width="75dp"
         android:layout_height="75dp"
         android:layout_marginTop="10dp"
@@ -44,11 +44,11 @@
         android:scaleType="centerCrop"
         app:layout_constraintBottom_toTopOf="@+id/playlist"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playlistListHeader"
+        app:layout_constraintTop_toBottomOf="@+id/playlist_list_header_image_view"
         app:srcCompat="@drawable/add_button_icon" />
 
     <ImageView
-        android:id="@+id/playlistListHeader"
+        android:id="@+id/playlist_list_header_image_view"
         android:layout_width="match_parent"
         android:layout_height="120dp"
         app:layout_constraintEnd_toEndOf="parent"
