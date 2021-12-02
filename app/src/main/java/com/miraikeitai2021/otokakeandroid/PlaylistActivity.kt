@@ -23,11 +23,6 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist)
 
-//        val actionbar = supportActionBar
-//        if(actionbar != null){
-//            actionbar.hide()
-//        }
-
         supportActionBar?.hide()
 
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
