@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.*
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.DialogFragment
@@ -110,6 +111,7 @@ class PlaylistPlayActivity : AppCompatActivity() {
 
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view){
         val musicTitle: TextView = view.findViewById(R.id.musicTitle2)
+        val coverImage: ImageView = view.findViewById(R.id.coverImage)
         val constraintLayout: ConstraintLayout = view.findViewById(R.id.constraintLayout)
     }
 
@@ -137,6 +139,11 @@ class PlaylistPlayActivity : AppCompatActivity() {
             holder.musicTitle.text = musicTitle
             val customFont: Typeface = Typeface.createFromAsset(assets,"Kaisotai-Next-UP-B.otf")
             holder.musicTitle.typeface = customFont
+
+            //ジャケット画像を設定
+            item.storage_id?.let{
+                holder.coverImage.setImageBitmap(StorageMusic().getImage(it,this@PlaylistPlayActivity))
+            }
 
             //曲クリック時の処理
             holder.constraintLayout.setOnClickListener {
