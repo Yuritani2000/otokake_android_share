@@ -42,6 +42,7 @@ class MusicHttpRequests(){
      */
     private val url = "http://10.0.2.2:8080/getMusicInfoAll"
 
+
     /**曲がダウンロードされている時は，この中にCancellableRequestのオブジェクトが入る．*
       */
     private var musicDownloadingRequest: CancellableRequest? = null
