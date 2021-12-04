@@ -1,7 +1,6 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.*
@@ -19,16 +18,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.InputStream
 
-class PlaylistEditActivity : AppCompatActivity() {
-
+class PlaylistEditDetailActivity : AppCompatActivity() {
     private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへの書き込み許可に利用する定数
     private var selectCount = 0 //選択している曲の数をカウントする変数
     private var selectMusicText: TextView? = null //選択中の曲数を表示するtextViewインスタンス
-    private val REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY = 1003
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_playlist_edit)
+        setContentView(R.layout.activity_playlist_edit_ditail)
 
         //アクションバー非表示
         val actionBar: androidx.appcompat.app.ActionBar? = supportActionBar
@@ -42,50 +39,57 @@ class PlaylistEditActivity : AppCompatActivity() {
         val db3Dao = db3.MiddleListDao()
 
         val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
+        val listMode :Int = intent.getIntExtra("list_mode", 0)
+
         supportActionBar?.title = db1Dao.getTitle(playlistId) //ツールバーのタイトルを変更
 
         var musicDataList = db2Dao.getAll() //データベースの全曲取得
 
         //曲をダウンロード済みリストと未ダウンロードリストに分ける．
-        var downloadMusicList: MutableList<Music> = arrayListOf()
-        var notDownloadMusicList: MutableList<Music> = arrayListOf()
+        var detailMusicList: MutableList<Music> = arrayListOf()
 
-        for(music in musicDataList){
-            if(music.storage_id != null){
-                downloadMusicList.add(music)
-            }else{
-                notDownloadMusicList.add(music)
+        //PlaylistEditActivityで押されたボタンに応じて，表示するリストを変える．
+        val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf") //カスタムフォント設定
+        val textView4 = findViewById<TextView>(R.id.textView4)
+        textView4?.typeface = customFont
+
+        when(listMode){
+            1 -> {
+                //リストの名前を表示
+                textView4?.setText(R.string.playlist_edit_detail_download)
+
+                //ダウンロード済みのリストを表示する
+                for (music in musicDataList) {
+                    if (music.storage_id != null) {
+                        detailMusicList.add(music)
+                    }
+                }
+            }
+            2 ->{
+                //リストの名前を表示
+                textView4?.setText(R.string.playlist_edit_detail_not_download)
+
+                //未ダウンロードのリストを表示する
+                for (music in musicDataList) {
+                    if (music.storage_id == null) {
+                        detailMusicList.add(music)
+                    }
+                }
+            }
+            else -> {
+                Toast.makeText(this,"${R.string.playlist_edit_detail_error_list}", Toast.LENGTH_LONG).show()
+                finish()
             }
         }
 
         val defaultList = db3Dao.getPlaylist(playlistId)   //もともと登録されてる曲一覧を取得
 
-        // 横方向スクロールに設定
-        val manager2 = LinearLayoutManager(this)
-        manager2.orientation = LinearLayoutManager.HORIZONTAL
-
-        val manager3 = LinearLayoutManager(this)
-        manager3.orientation = LinearLayoutManager.HORIZONTAL
-
-        // RecyclerView2の取得
+        // RecyclerViewの取得
         var recyclerView2 = findViewById<RecyclerView>(R.id.RecyclerView2)
         // LayoutManagerの設定
-        recyclerView2.layoutManager = manager2
+        recyclerView2.layoutManager = LinearLayoutManager(this)
         // CustomAdapterの生成と設定
-        if(downloadMusicList.size != 0) {
-            // CustomAdapterの生成と設定
-            recyclerView2.adapter = RecyclerListAdapter(downloadMusicList, defaultList, db3Dao, playlistId, db2Dao)
-        }
-
-        // RecyclerView3の取得
-        var recyclerView3 = findViewById<RecyclerView>(R.id.RecyclerView3)
-        // LayoutManagerの設定
-        recyclerView3.layoutManager = manager3
-        // CustomAdapterの生成と設定
-        if(notDownloadMusicList.size != 0) {
-            // CustomAdapterの生成と設定
-            recyclerView3.adapter = RecyclerListAdapter(notDownloadMusicList, defaultList, db3Dao, playlistId, db2Dao)
-        }
+        recyclerView2.adapter=RecyclerListAdapter(detailMusicList, defaultList, db3Dao, playlistId,db2Dao)
 
         //戻るボタンの表示(無効中)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -111,7 +115,6 @@ class PlaylistEditActivity : AppCompatActivity() {
 
         //読み込みボタンクリック時(将来的に削除予定)
         val inputButton = findViewById<Button>(R.id.input2)
-        val customFont: Typeface = Typeface.createFromAsset(assets, "Kaisotai-Next-UP-B.ttf")
         inputButton.typeface = customFont
         inputButton.setOnClickListener {
 
@@ -138,48 +141,22 @@ class PlaylistEditActivity : AppCompatActivity() {
                 musicDataList = db2Dao.getAll()
 
                 //曲をダウンロード済みリストと未ダウンロードリストに分ける．
-                downloadMusicList = arrayListOf()
-                notDownloadMusicList = arrayListOf()
+                detailMusicList = arrayListOf()
 
                 for(music in musicDataList){
-                    if(music.storage_id != null){
-                        downloadMusicList.add(music)
-                    }else{
-                        notDownloadMusicList.add(music)
+                    if(music.storage_id != null) {
+                        detailMusicList.add(music)
                     }
                 }
 
-                // RecyclerViewの取得
-                recyclerView2 = findViewById(R.id.RecyclerView2)
-                // LayoutManagerの設定
-                recyclerView2.layoutManager = manager2
-                // CustomAdapterの生成と設定
-                if(downloadMusicList.size != 0) {
-                    recyclerView2.adapter = RecyclerListAdapter(
-                        downloadMusicList,
-                        defaultList,
-                        db3Dao,
-                        playlistId,
-                        db2Dao
-                    )
-                }
-
-                // RecyclerView3の取得
-                recyclerView3 = findViewById(R.id.RecyclerView3)
-                // LayoutManagerの設定
-                recyclerView3.layoutManager = manager3
-                // CustomAdapterの生成と設定
-                if(notDownloadMusicList.size != 0) {
+                if(detailMusicList.size > 0){ //
+                    // RecyclerViewの取得
+                    recyclerView2 = findViewById(R.id.RecyclerView2)
+                    // LayoutManagerの設定
+                    recyclerView2.layoutManager = LinearLayoutManager(this)
                     // CustomAdapterの生成と設定
-                    recyclerView3.adapter = RecyclerListAdapter(
-                        notDownloadMusicList,
-                        defaultList,
-                        db3Dao,
-                        playlistId,
-                        db2Dao
-                    )
+                    recyclerView2.adapter=RecyclerListAdapter(detailMusicList, defaultList, db3Dao, playlistId,db2Dao)
                 }
-
 
                 Log.d("debug", "コールバック呼ばれました")
             }
@@ -187,7 +164,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             // 曲一覧の取得に失敗したときに呼ばれるコールバック．エラー内容をダイアログに表示する．
             val handleGetMusicListFailed = fun(exception: Exception){
                 Log.e("debug", "failed to get music list from backend.")
-                AlertDialog.Builder(this@PlaylistEditActivity)
+                AlertDialog.Builder(this@PlaylistEditDetailActivity)
                     .setTitle(R.string.get_music_list_failed_title)
                     .setMessage("${getString(R.string.get_music_list_failed_message)}\n エラー詳細: ${exception.toString()}")
                     .setPositiveButton(R.string.ok, null)
@@ -205,40 +182,11 @@ class PlaylistEditActivity : AppCompatActivity() {
             musicHttpRequests.requestGetMusicList(getMusicListHandler)
         }
 
-        //ダウンロード済みの全て見るボタンクリック時
-        val buttonView2 = findViewById<Button>(R.id.button2)
-        buttonView2.typeface = customFont
-        buttonView2.setOnClickListener {
-            //インテント処理
-            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDetailActivity::class.java)
-            intent.putExtra("playlist_id",playlistId)
-            intent.putExtra("list_mode", 1)
-            startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
-        }
-
-        //未ダウンロードの全て見るボタンクリック時
-        val buttonView3 = findViewById<Button>(R.id.button3)
-        buttonView3.typeface = customFont
-        buttonView3.setOnClickListener {
-            //インテント処理
-            val intent = Intent(this@PlaylistEditActivity, PlaylistEditDetailActivity::class.java)
-            intent.putExtra("playlist_id",playlistId)
-            intent.putExtra("list_mode", 2)
-            startActivityForResult(intent, REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY)
-        }
-
         //選択中の曲数を表示
         selectMusicText = findViewById(R.id.select_music_text_view)
         selectMusicText?.typeface = customFont
         selectMusicText?.text = "$selectCount"
 
-        //textView2のフォント指定
-        val textView2 = findViewById<TextView>(R.id.textView2)
-        textView2.typeface = customFont
-
-        //textView3のフォント指定
-        val textView3 = findViewById<TextView>(R.id.textView3)
-        textView3.typeface = customFont
     }
 
     //戻るボタンクリック時(無効中)
@@ -253,24 +201,24 @@ class PlaylistEditActivity : AppCompatActivity() {
         val musicTitle: TextView = view.findViewById(R.id.musicTitle)
         val checkBox: CheckBox = view.findViewById(R.id.checkBox)
         val jacketImage: ImageView = view.findViewById(R.id.jacketImage)
-        val constraintLayout: ConstraintLayout = view.findViewById(R.id.editContstraintLayout)
+        val constraintLayout: ConstraintLayout = view.findViewById(R.id.editDownloadConstraintLayout)
     }
 
     private inner class RecyclerListAdapter(private val musicDataList: List<Music>, val defaultList: List<Int>, private val db3Dao: MiddleListDao,private val playlist_id: Int,private val db2Dao: MusicDao):
-        RecyclerView.Adapter<PlaylistEditActivity.ViewHolder>() {
+        RecyclerView.Adapter<PlaylistEditDetailActivity.ViewHolder>() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
-        ): PlaylistEditActivity.ViewHolder {
+        ): PlaylistEditDetailActivity.ViewHolder {
             //レイアウトインフレータを取得
-            val inflater = LayoutInflater.from(this@PlaylistEditActivity)
+            val inflater = LayoutInflater.from(this@PlaylistEditDetailActivity)
             //row.xmlをインフレ―トし、1行分の画面部品とする
-            val view = inflater.inflate(R.layout.playlist_edit_row, parent, false)
+            val view = inflater.inflate(R.layout.playlist_edit_detail_row, parent, false)
             //生成したビューホルダをリターン
             return ViewHolder(view)
         }
 
-        override fun onBindViewHolder(holder: PlaylistEditActivity.ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: PlaylistEditDetailActivity.ViewHolder, position: Int) {
             // 未ダウンロードの曲をダウンロードする際に表示するダイアログ．
             var musicDownloadDialog: MusicDownloadDialog? = null
 
@@ -301,7 +249,7 @@ class PlaylistEditActivity : AppCompatActivity() {
             val storageIdDb = item.storage_id
             if(storageIdDb != null){
                 val storageMusic = StorageMusic()
-                holder.jacketImage.setImageBitmap(storageMusic.getImage(storageIdDb, this@PlaylistEditActivity))
+                holder.jacketImage.setImageBitmap(storageMusic.getImage(storageIdDb, this@PlaylistEditDetailActivity))
             }
 
 
@@ -310,31 +258,26 @@ class PlaylistEditActivity : AppCompatActivity() {
                 Log.d("debug", "callback called: $inputStream")
                 val storageMusic = StorageMusic()
                 // APIレベルが29以上である（ファイル書き出し許可が必要ない）か，ファイル書き出し許可が取れている場合のみ，曲のストレージへの保存処理を行う．
-                if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this@PlaylistEditActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this@PlaylistEditDetailActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                     Log.d("debug", "save music in storage")
                     storageMusic.storageInMusic(
-                        this@PlaylistEditActivity,
+                        this@PlaylistEditDetailActivity,
                         inputStream,
                         item.backend_id
                     )
 
                     // 保存した曲のストレージIDを保存する．
-                    val storageId = storageMusic.checkStorageId(this@PlaylistEditActivity)
+                    val storageId = storageMusic.checkStorageId(this@PlaylistEditDetailActivity)
                     Log.d("debug", "new music storage id: $storageId")
                     if(storageId != -1L){   // 保存した曲のストレージIDが返って来れば，それをDBへ登録する．
-                        val db2 = MusicDatabase.getInstance(this@PlaylistEditActivity)
+                        val db2 = MusicDatabase.getInstance(this@PlaylistEditDetailActivity)
                         val db2Dao = db2.MusicDao()
                         //ストレージIDをデータベースへ登録
                         db2Dao.updateStorageId(item.backend_id,storageId)
 
                         //リサイクルビューのImageViewを更新
-                        holder.jacketImage.setImageBitmap(storageMusic.getImage(storageId, this@PlaylistEditActivity))
+                        holder.jacketImage.setImageBitmap(storageMusic.getImage(storageId, this@PlaylistEditDetailActivity))
 
-                        //Activityの更新．
-                        finish()
-                        val intent = intent
-                        //activity再起動
-                        startActivity(intent)
                     }else{
                         Log.e("debug", "could not get ")
                     }
@@ -358,7 +301,7 @@ class PlaylistEditActivity : AppCompatActivity() {
 
             // 曲のダウンロードが失敗したときに呼ばれるコールバック．エラー内容をダイアログに表示する．
             val handleMusicDownloadFailed = fun(exception: Exception){
-                AlertDialog.Builder(this@PlaylistEditActivity)
+                AlertDialog.Builder(this@PlaylistEditDetailActivity)
                     .setTitle(R.string.download_music_failed_title)
                     .setMessage("${getString(R.string.download_music_failed_message)}\n エラー詳細: $exception")
                     .setPositiveButton(R.string.ok, null)
@@ -410,7 +353,7 @@ class PlaylistEditActivity : AppCompatActivity() {
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
                     holder.checkBox.isChecked = true
-                    Log.d("debug", "element tapped in PlaylistEditActivity")
+                    Log.d("debug", "element tapped in PlaylistEditDownloadActivity")
                     downloadMusic()
                 }
                 else{   //チェック入ってる(削除)時
@@ -441,7 +384,7 @@ class PlaylistEditActivity : AppCompatActivity() {
 
                     // DBの中間テーブルへ登録
                     db3Dao.insertMusic(playlist_id,item.backend_id)
-                    Log.d("debug", "element tapped in PlaylistEditActivity")
+                    Log.d("debug", "element tapped in PlaylistEditDownloadActivity")
                     downloadMusic()
                 }
             }
@@ -473,20 +416,4 @@ class PlaylistEditActivity : AppCompatActivity() {
             else -> return
         }
     }
-
-   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            REQUEST_PLAYLIST_EDIT_DOWNLOAD_ACTIVITY -> {
-                //そのままActivityを閉じる．
-                finish()
-
-                val intent = intent
-
-                //activity再起動
-                startActivity(intent)
-            }
-        }
-    }
 }
-

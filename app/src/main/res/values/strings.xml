@@ -39,6 +39,17 @@
     <string name="normal_score_string">score_good</string>
     <string name="bad_score_string">score_miss</string>
     <string name="read_external_storage_denied_warning">ストレージへのアクセスを許可しない場合、この機能を使用できません。</string>
+    <string name="read_music_buckend_button">読み込み</string>
+    <string name="dummy_string">.</string>
+    <string name="select_music_edit_text_view">△</string>
+    <string name="layout_edit_download_list_text_view">ダウンロード済み</string>
+    <string name="layout_edit_not_download_list_text_view">未ダウンロード</string>
+    <string name="layout_edit_all_show_button_view">すべて見る</string>
+    <string name="layout_list_download_text_view">リスト</string>
+    <string name="music_select_string">曲選択中</string>
+    <string name="playlist_edit_detail_download">ダウンロード済み</string>
+    <string name="playlist_edit_detail_not_download">未ダウンロード</string>
+    <string name="playlist_edit_detail_error_list">リストを表示出来ません</string>
     <string name="todo_string">TODO</string>
     <string name="game_score_music_name_string">曲1</string>
     <string name="game_score_total_score_string">今回のスコア</string>

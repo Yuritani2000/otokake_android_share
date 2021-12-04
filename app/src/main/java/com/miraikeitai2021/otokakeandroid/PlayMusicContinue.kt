@@ -1,6 +1,7 @@
 package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
+import android.util.Log
 
 class PlayMusicContinue() {
     private val checkMusicUri = CheckMusicUri()
@@ -24,6 +25,7 @@ class PlayMusicContinue() {
         resetOrder()
 
         playMusic.startMusic(checkMusicUri.checkUri(myStorageIdList[order].toInt(),context.contentResolver))
+        Log.d("debug", "startMusic_storageId: ${myStorageIdList[order]}")
     }
 
     /**

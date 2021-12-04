@@ -146,9 +146,6 @@ class StorageMusic {
         return id
     }
 
-
-
-
     /**
      * 音楽ファイルのメタデータからジャケット画像を取得するメソッド
      * storageId: 取得先の音楽ファイルのストレージId
