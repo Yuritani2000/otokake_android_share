@@ -2,6 +2,7 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Typeface
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.*
@@ -17,9 +18,12 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
     val playlists: MutableList<MutableMap<String, Any>> = mutableListOf()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist)
+
+        supportActionBar?.hide()
 
         val db1 = PlaylistDatabase.getInstance(this)    //PlayListのDB作成
         val db1Dao = db1.PlaylistDao()  //Daoと接続
@@ -30,7 +34,7 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         getPlaylist(adapter, db1Dao)
 
         //RecyclerViewを取得
-        val recyclerview = findViewById<RecyclerView>(R.id.playlist)
+        val recyclerview = findViewById<RecyclerView>(R.id.playlist_recycler_view)
         //LinearLayoutManagerオブジェクトを生成
         val layout = LinearLayoutManager(this@PlaylistActivity)
         //RecyclerViewにレイアウトマネージャーとしてLinearLayoutを設定
@@ -43,7 +47,16 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
         //RecyclerViewに区切り線オブジェクトを設定
         recyclerview.addItemDecoration(decorator)
 
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        val returnButton = findViewById<ImageButton>(R.id.return_button)
+        returnButton.setOnClickListener{
+            finish()
+        }
+
+        val addButton = findViewById<ImageButton>(R.id.add_button)
+        addButton.setOnClickListener{
+            val dialogFragment = AddPlaylistDialogFragment()
+            dialogFragment.show(supportFragmentManager, "AddPlaylistDialogFragment")
+        }
     }
 
     private fun getPlaylist(adapter: RecyclerListAdapter, db1Dao: PlaylistDao){
@@ -82,34 +95,10 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_options_list, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var returnVal = true
-
-        when (item.itemId) {
-            android.R.id.home -> {
-                finish()
-            }
-            R.id.add -> {
-                val dialogFragment = AddPlaylistDialogFragment()
-                dialogFragment.show(supportFragmentManager, "AddPlaylistDialogFragment")
-            }
-            else -> {
-                returnVal = super.onOptionsItemSelected(item)
-            }
-        }
-
-        return returnVal
-    }
-
     private inner class RecyclerListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
-        var listNameRow: TextView = itemView.findViewById(R.id.listTitle)
-        var deleteButtonRow: ImageButton = itemView.findViewById(R.id.deleteListButton)
+        var listNameRow: TextView = itemView.findViewById(R.id.list_title)
+        var deleteButtonRow: ImageButton = itemView.findViewById(R.id.delete_list_button)
 
     }
 
@@ -133,6 +122,10 @@ class PlaylistActivity : AppCompatActivity(),AddPlaylistDialogFragment.DialogLis
 
             //ビューホルダ中のTextViewに設定
             holder.listNameRow.text = listTitle
+
+            //ここのカスタムフォントはアプリ全体に適応されるため将来削除
+            val customFont = Typeface.createFromAsset(getAssets(), "Kaisotai-Next-UP-B.ttf")
+            holder.listNameRow.setTypeface(customFont)
 
             //削除ボタンクリック時
             holder.deleteButtonRow.setOnClickListener {
