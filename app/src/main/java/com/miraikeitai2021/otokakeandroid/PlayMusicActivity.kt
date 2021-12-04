@@ -236,8 +236,19 @@ class PlayMusicActivity : AppCompatActivity() {
     private fun tappedSkipButton(){
         // 曲を一度も再生したことがない状態で作動しないようにする
         if(playMusic.getMediaPlayer() != null){
-            //次の曲を再生する．
-            playMusicContinue.callBackPlayMusic(this, playMusic)
+            if(playMusic.isPlaying()){
+                // 再生中にスキップボタンがタップされたのであれば，次の曲を再生する．
+                playMusicContinue.callBackPlayMusic(this, playMusic)
+            }else{
+                // 現在の仕様だと，callBackPlayMusicメソッドでは次の曲に飛ぶと同時に，曲の再生を始めることになっている．
+                // 一時停止中にスキップボタンを押した後も停止状態を維持できるよう，
+                // 停止中にスキップボタンがタップされたのであれば，次の曲に移動した直後に一時停止する，
+                // 直後に呼んでも動作しないため，Handlerで動作を遅延させる．
+                playMusicContinue.callBackPlayMusic(this, playMusic)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    playMusic.pauseMusic()
+                }, 10)
+            }
         }
     }
 
@@ -289,7 +300,7 @@ class PlayMusicActivity : AppCompatActivity() {
     private fun tappedBluetoothButton(){
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ動作する
         if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
-          if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+          if(playMusic.getMediaPlayer() != null && playMusic.isPlaying()){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける．また，一時停止中に曲の速度を変更して曲の再生が再び始まってしまうのを避ける．
               //ストレージIDを取得
               val musicId = playMusicContinue.getStorageId()
 
