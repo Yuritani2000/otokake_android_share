@@ -535,6 +535,7 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         Log.d("debug", "displayScore")
         val intent = Intent(this@PlayMusicGamemodeActivity,DisplayScoreActivity::class.java)
         intent.putExtra("pointArray", pointArray)
+        intent.putExtra("storageId", storageId)
         startActivityForResult(intent, REQUEST_DISPLAY_SCORE_ACTIVITY)
     }
 

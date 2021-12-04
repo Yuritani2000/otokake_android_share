@@ -3,8 +3,10 @@ package com.miraikeitai2021.otokakeandroid
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
+import android.graphics.Typeface
 import android.os.Bundle
 import android.widget.EditText
+import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import java.lang.IllegalStateException
 
@@ -35,17 +37,18 @@ class AddPlaylistDialogFragment : DialogFragment(){
                 if (!text.isNullOrEmpty()){//textが空でなければ
                     listener?.onDialogTextReceive(this,text.toString(),db1Dao)
                 }
+
             }
             builder.setNegativeButton(R.string.dialog_btn_ng){ _, _ ->
                 listener?.onDialogNegative(this)
-
             }
 
 
             builder.create()
         }
+        val msg = getString(R.string.add_playlist_exception)
 
-        return dialog?: throw IllegalStateException("アクティビティがnullです")
+        return dialog?: throw IllegalStateException(msg)
     }
 
     override fun onAttach(context: Context) {

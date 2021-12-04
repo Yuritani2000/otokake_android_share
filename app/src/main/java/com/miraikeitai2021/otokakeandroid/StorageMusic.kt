@@ -2,6 +2,9 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -141,5 +144,31 @@ class StorageMusic {
             }
         }
         return id
+    }
+
+    /**
+     * 音楽ファイルのメタデータからジャケット画像を取得するメソッド
+     * storageId: 取得先の音楽ファイルのストレージId
+     * context: 呼び出し元ActivityのContext
+     */
+    fun getImage(storageId: Long, context: Context): Bitmap? {
+
+        val mmr = MediaMetadataRetriever()
+        val checkMusicUri = CheckMusicUri()
+
+        //ストレージId指定の音楽のメタデータを取得
+        mmr.setDataSource(context, checkMusicUri.checkUri(storageId.toInt(), context.contentResolver))
+
+        //ジャケット画像をByte型で取得
+        val byte: ByteArray? = mmr.embeddedPicture
+
+        var albumArt: Bitmap? = null
+
+        //Byte型をBitmap型に変換
+        if(byte != null){
+            albumArt = BitmapFactory.decodeByteArray(byte, 0, byte.size)
+        }
+
+        return albumArt
     }
 }
