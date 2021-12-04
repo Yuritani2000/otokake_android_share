@@ -219,6 +219,8 @@ class PlayMusicActivity : AppCompatActivity() {
      * 巻き戻しボタンがタップされたときの処理
      */
     private fun tappedRewindButton(){
+        // スキップ処理を行う前の再生状態を保存しておく
+        val isPlayingBefore = playMusic.isPlaying()
         // 曲を一度も再生したことがない状態で作動しないようにする
         if(playMusic.getMediaPlayer() != null){
             // 始めから2秒以内のところで巻き戻しボタンを押した場合，前の曲を再生．
@@ -228,27 +230,31 @@ class PlayMusicActivity : AppCompatActivity() {
                 playMusic.seekTo(0)
             }
         }
+        // 処理前に一時停止中であったのなら，再び一時停止する
+        if(!isPlayingBefore){
+            Handler(Looper.getMainLooper()).postDelayed({
+                playMusic.pauseMusic()
+            }, 10)
+        }
     }
 
     /**
      * 早送りボタンがタップされたときの処理
      */
     private fun tappedSkipButton(){
+        // スキップ処理を行う前の再生状態を保存しておく
+        val isPlayingBefore = playMusic.isPlaying()
         // 曲を一度も再生したことがない状態で作動しないようにする
         if(playMusic.getMediaPlayer() != null){
-            if(playMusic.isPlaying()){
-                // 再生中にスキップボタンがタップされたのであれば，次の曲を再生する．
-                playMusicContinue.callBackPlayMusic(this, playMusic)
-            }else{
-                // 現在の仕様だと，callBackPlayMusicメソッドでは次の曲に飛ぶと同時に，曲の再生を始めることになっている．
-                // 一時停止中にスキップボタンを押した後も停止状態を維持できるよう，
-                // 停止中にスキップボタンがタップされたのであれば，次の曲に移動した直後に一時停止する，
-                // 直後に呼んでも動作しないため，Handlerで動作を遅延させる．
-                playMusicContinue.callBackPlayMusic(this, playMusic)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    playMusic.pauseMusic()
-                }, 10)
-            }
+            // 再生中にスキップボタンがタップされたのであれば，次の曲を再生する．
+            playMusicContinue.callBackPlayMusic(this, playMusic)
+        }
+
+        // 処理前に一時停止中であったのなら，再び一時停止する．
+        if(!isPlayingBefore){
+            Handler(Looper.getMainLooper()).postDelayed({
+                playMusic.pauseMusic()
+            }, 10)
         }
     }
 
