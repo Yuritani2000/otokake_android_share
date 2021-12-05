@@ -22,7 +22,7 @@
     </androidx.recyclerview.widget.RecyclerView>
 
     <TextView
-        android:id="@+id/playlistTitle"
+        android:id="@+id/playlist_title_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
@@ -35,7 +35,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
-        android:id="@+id/backButton"
+        android:id="@+id/back_image_button"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginStart="16dp"
@@ -47,7 +47,7 @@
         app:srcCompat="@drawable/back_allow" />
 
     <ImageButton
-        android:id="@+id/editButton"
+        android:id="@+id/edit_image_button"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginTop="90dp"

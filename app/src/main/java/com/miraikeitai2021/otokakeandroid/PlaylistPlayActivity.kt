@@ -7,12 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -40,18 +38,18 @@ class PlaylistPlayActivity : AppCompatActivity() {
 
         //再生リストタイトルの表示
         val customFont: Typeface = Typeface.createFromAsset(assets,"Kaisotai-Next-UP-B.otf")
-        val playlistTitle: TextView = findViewById(R.id.playlistTitle)
+        val playlistTitle: TextView = findViewById(R.id.playlist_title_text_view)
         playlistTitle.text = db1Dao.getTitle(playlistId)
         playlistTitle.typeface = customFont
 
         //戻るボタンタップ時
-        val backButton = findViewById<ImageButton>(R.id.backButton)
+        val backButton = findViewById<ImageButton>(R.id.back_image_button)
         backButton.setOnClickListener{
             finish()
         }
 
         //鉛筆ボタンタップ時
-        val editButton = findViewById<ImageButton>(R.id.editButton)
+        val editButton = findViewById<ImageButton>(R.id.edit_image_button)
         editButton.setOnClickListener {
                 val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
                 val intent = Intent(this, PlaylistEditActivity::class.java)
@@ -72,30 +70,6 @@ class PlaylistPlayActivity : AppCompatActivity() {
 
     }
 
-//    //ツールバーの初期化
-//    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-//        menuInflater.inflate(R.menu.menu_options_musiclist, menu)
-//        return true
-//    }
-//
-//    //ツールバータップ時の処理
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        when (item.itemId) {
-//            android.R.id.home -> {  //戻るボタンクリック時
-//                finish()
-//            }
-//            R.id.edit -> {  //編集ボタンクリック時
-//                val playlistId :Int = intent.getIntExtra("playlist_id",0)   //インテント元からプレイリスト番号を取得
-//                val intent = Intent(this, PlaylistEditActivity::class.java)
-//                intent.putExtra("playlist_id",playlistId)
-//                startActivityForResult(intent, 9)
-//            }
-//        }
-//        return true
-//    }
-
-
-
     //このActivity起動時の処理
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -110,8 +84,8 @@ class PlaylistPlayActivity : AppCompatActivity() {
     }
 
     private inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view){
-        val musicTitle: TextView = view.findViewById(R.id.musicTitle2)
-        val coverImage: ImageView = view.findViewById(R.id.coverImage)
+        val musicTitle: TextView = view.findViewById(R.id.music_title_2)
+        val coverImage: ImageView = view.findViewById(R.id.cover_image_view)
         val constraintLayout: ConstraintLayout = view.findViewById(R.id.constraintLayout)
     }
 
@@ -164,18 +138,6 @@ class PlaylistPlayActivity : AppCompatActivity() {
                 bundle.putSerializable("storageIdList",storageIdList)
                 fragment.arguments = bundle
                 fragment.show(supportFragmentManager,PlaylistPlayFragment::class.simpleName)
-
-//                val data: Array<Int> = db3Dao.tap(playlist_id,item.backend_id)   //タップした曲以降のバックエンドIDを取得
-//                var storageIdList: Array<Long> = arrayOf()  //ストレージIDを格納する配列
-//                for (i in data.indices){    //バックエンドIDの配列からストレージIDの配列を取得
-//                    storageIdList += db2Dao.getStorageId(data[i])
-//                    Log.d("debug", "storage id list 0: ${storageIdList[0]}")
-//                }
-//
-//                //インテント処理
-//                val intent = Intent(this@PlaylistPlayActivity, PlayMusicActivity::class.java)
-//                intent.putExtra("storageIdList",storageIdList)
-//                startActivity(intent)
             }
 
         }
