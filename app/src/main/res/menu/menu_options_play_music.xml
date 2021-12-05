@@ -2,23 +2,12 @@
 <menu
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-
-    <item
-        android:id="@+id/chage_foot_sound"
-        android:orderInCategory="100"
-        android:title="@string/change_footsteps"
-        android:icon="@drawable/change_footsteps_icon"
-        app:showAsAction="always">
-        <menu>
-            <item
-                android:id="@+id/boyon"
-                app:showAsAction="never"
-                android:title="@string/boyon"/>
-
-            <item
-                android:id="@+id/japanese_drum"
-                app:showAsAction="never"
-                android:title="@string/japanese_drum"/>
-        </menu>
-    </item>
+        <item
+            android:id="@+id/boyon"
+            app:showAsAction="never"
+            android:title="@string/boyon"/>
+        <item
+            android:id="@+id/japanese_drum"
+            app:showAsAction="never"
+            android:title="@string/japanese_drum"/>
 </menu>

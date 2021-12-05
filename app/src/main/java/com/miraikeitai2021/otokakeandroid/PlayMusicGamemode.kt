@@ -27,6 +27,7 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
             try {
                 mediaPlayer = MediaPlayer()
                 mediaPlayer!!.setDataSource(myContext, musicUri)
+                mediaPlayer?.setVolume(0.3f, 0.3f)
                 mediaPlayer!!.prepare()
                 mediaPlayer!!.start()
                 Log.d("debug", "startMusic")
@@ -58,6 +59,26 @@ class PlayMusicGamemode(context: Context, playMusicGamemodeActivity: PlayMusicGa
             myPlayMusicGamemodeActivity.displayScore()
             myPlayMusicGamemodeActivity.resetScore()
         }
+    }
+
+    /**
+     * 曲の全体の長さを取得する．
+     */
+    fun getDuration(): Int{
+        mediaPlayer?.let{
+            return it.duration
+        }
+        return -1
+    }
+
+    /**
+     * 曲の現在の再生位置を取得する．
+     */
+    fun getProgress(): Int{
+        mediaPlayer?.let{
+            return it.currentPosition
+        }
+        return -1
     }
 
     /**

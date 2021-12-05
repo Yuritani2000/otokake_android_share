@@ -87,7 +87,7 @@ interface MusicDao{
     @Query("SELECT storage_id FROM Music WHERE backend_id = :backendId")
     fun tap(backendId: Int): Long?
 
-    //ストレージIDから曲の情報を出力
+    // ストレージIDから曲の情報を出力
     @Query("SELECT * FROM Music WHERE storage_id = :storageId")
     fun getMusicFromStorageId(storageId: Long): Music?
 }

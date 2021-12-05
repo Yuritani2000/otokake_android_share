@@ -7,8 +7,10 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioAttributes
+import android.media.MediaMetadataRetriever
 import android.media.SoundPool
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -17,14 +19,18 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicGamemodeBinding
+import kotlinx.coroutines.*
+import java.lang.Exception
 import kotlin.math.abs
 
 /**
@@ -56,11 +62,27 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     // 右足デバイスと通信してデータを受け取るスレッド
     private var bleConnectionRunnableRight: BleConnectionRunnable? = null
 
+    // 曲目データベースのインスタンス
+    private val musicDatabase = MusicDatabase.getInstance(this)
+    val musicDao = musicDatabase.MusicDao()
+
+    // 曲がまだ再生されていないかどうかを確かめる．
+    private var isMusicNotPlayed = true
+
+    // 左足デバイスが接続されているかを示す
+    private var isLeftDeviceConnected = false
+
+    // 右足デバイスが接続されているかを示す
+    private var isRightDeviceConnected = false
+
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPlayMusicGamemodeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // アクションバーを非表示にする
+        supportActionBar?.hide()
 
         //ストレージIDをインテント元から取得
         storageId = intent.getLongExtra("storageId",0)
@@ -120,11 +142,10 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
 //        }
 
         //************************************************************************************
-
-        binding.startButton.setOnClickListener { tappedStartButton() }
-        binding.stopButton.setOnClickListener { tappedStopButton() }
-        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
-
+        binding.backButton.setOnClickListener { tappedBackButton() }
+        binding.changeFootstepButton.setOnClickListener { view -> tappedChangeFootStepButton(view) }
+        // テスト用．本番環境では無効にする必要がある．
+        binding.bluetoothButton.setOnClickListener { tappedBluetoothButton() }
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
         fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
@@ -154,9 +175,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), PERMISSION_WRITE_EX_STR)
         }
 
-
-        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
-        searchLeftDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectLeftDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                     bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
@@ -164,8 +184,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             }
         }
 
-        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
-        searchRightDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectRightDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                     bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
@@ -173,17 +193,34 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             }
         }
 
-        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-        disconnectLeftDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
+        // シークバーの初期化．1000段階で表示．
+        // ゲームモードではユーザーがシークバーを操作できない．
+        binding.musicSeekBar.max = 1000
+        binding.musicSeekBar.progress = 0
+
+        // バックエンドから曲の情報を取得．曲名，アーティスト名，カバー画像．
+        val musicInfo = musicDao.getMusicFromStorageId(storageId)
+        musicInfo?.let {
+            val firstMusicTitle = musicInfo.title
+            val firstMusicArtist = musicInfo.artist
+            // TextViewにセット
+            binding.musicTitleTextView.text = firstMusicTitle
+            binding.musicArtistTextView.text = firstMusicArtist
         }
 
-        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-        disconnectRightDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
+        // 曲のアルバム画像を取得
+        val albumPictureByteArray = getAlbumPictureFromMetadata(storageId)
+        albumPictureByteArray?.let{ albumPictureByteArray ->
+            val albumPictureBitmap = BitmapFactory.decodeByteArray(albumPictureByteArray, 0, albumPictureByteArray.size)
+            albumPictureBitmap?.let { albumPictureBitmap ->
+                binding.musicAlbumImageView.setImageBitmap(albumPictureBitmap)
+            }
         }
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
+        watchPlayerStatusCoroutine()
     }
 
     /**
@@ -191,11 +228,8 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
      */
     private fun tappedStartButton(){
         //曲をスタートする
-        val text: TextView = findViewById(R.id.textView)
         val contentUri = checkMusicUri.checkUri(storageId.toInt(), contentResolver)
-        text.setText(contentUri.toString())
         playMusicGamemode.startMusic(contentUri)
-        //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -204,6 +238,55 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     private fun tappedStopButton(){
         //曲をストップする
         playMusicGamemode.stopMusic()
+    }
+
+    /**
+     * 前の画面に戻るボタンがタップされたときの処理
+     */
+    private fun tappedBackButton(){
+        tappedStopButton()
+        finish()
+    }
+
+    /**
+     * 足音の変更ボタンがタップされたときの処理
+     */
+    private fun tappedChangeFootStepButton(v: View){
+        val footStepChangePopup = PopupMenu(this, v)
+        val inflater: MenuInflater = footStepChangePopup.menuInflater
+        inflater.inflate(R.menu.menu_options_play_music, footStepChangePopup.menu)
+        footStepChangePopup.setOnMenuItemClickListener { item ->
+            when(item.itemId){
+                R.id.boyon -> {
+                    nowSetFootsteps = "ボヨン"
+                    true
+                }
+
+                R.id.japanese_drum ->{
+                    nowSetFootsteps = "和太鼓"
+                    true
+                }
+                else -> false
+            }
+        }
+        footStepChangePopup.show()
+    }
+
+    /**
+     * 曲のメタデータから画像を持ってくる処理
+     */
+    private fun getAlbumPictureFromMetadata(storageId: Long): ByteArray?{
+        val mmr = MediaMetadataRetriever()
+        mmr.setDataSource(this, checkMusicUri.checkUri(storageId.toInt(), this.contentResolver))
+        var albumPictureByteArray: ByteArray? = null
+        if(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) != null) {
+            try {
+                albumPictureByteArray = mmr.embeddedPicture
+            }catch(e: Exception){
+                Log.e("debug", "failed to get album picture: $e")
+            }
+        }
+        return albumPictureByteArray
     }
 
     /**
@@ -231,16 +314,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         Log.d("debug", "pointArray[1]: ${pointArray[0]}")
         Log.d("debug", "pointArray[2]: ${pointArray[1]}")
         Log.d("debug", "pointArray[3]: ${pointArray[2]}")
-
-
-
-//        //歩調のBpmによって曲の再生速度を変更する
-//        playMusicGamemode.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId),checkMusicBpm.checkMusicBpm(this, musicId))
-//
-//        val text: TextView = findViewById(R.id.textView)
-//        text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-//                "runBpm: ${checkRunBpm.getRunBpm()}  " +
-//                "musicSpeed: ${playMusicGamemode.getChangedMusicSpeed()}  ")
     }
 
     /**
@@ -296,31 +369,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
                     Toast.makeText(this,"外部ストレージへのアクセスを許可しない場合，この機能を使用できません。", Toast.LENGTH_LONG).show()
                     finish()
                 }
-            }
-        }
-    }
-
-    /**
-     * SensorValueHandlerから圧力の値を受け取った時，圧力の計測値を示すTextViewを更新するラムダ式．
-     * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
-     */
-    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-        when(positionId){
-            SENSOR_LEFT_1 ->{
-                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-                sensorValueLeft1TextView.text = sensorValue.toString()
-            }
-            SENSOR_LEFT_2 ->{
-                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-                sensorValueLeft2TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_1 ->{
-                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-                sensorValueRight1TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_2 ->{
-                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-                sensorValueRight2TextView.text = sensorValue.toString()
             }
         }
     }
@@ -395,18 +443,69 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     }
 
     /**
+     * デバイスの接続状態が変化したときに呼ばれるメソッド
+     * */
+    private val handleOnConnectionStatusChanged = fun(deviceName: String, status: Int){
+        // 表示するテキストとその色が入る変数
+        var text = ""
+        var textColor = 0
+        // 接続状態が「切断」か，「接続中」か，「接続済み」かを見分け，入れるテキストと色を指定
+        when(status){
+            DEVICE_SCANNING -> {
+                text = getString(R.string.scanning)
+                textColor = Color.BLACK
+            }
+            DEVICE_DISCONNECTED -> {
+                text = getString(R.string.disconnected)
+                textColor = Color.BLACK
+                when(deviceName){
+                    DEVICE_NAME_LEFT -> {
+                        isLeftDeviceConnected = false
+                    }
+                    DEVICE_NAME_RIGHT -> {
+                        isRightDeviceConnected = false
+                    }
+                }
+            }
+            DEVICE_CONNECTING -> {
+                text = getString(R.string.connecting)
+                textColor = Color.BLACK
+            }
+            DEVICE_CONNECTED -> {
+                text = getString(R.string.connected)
+                textColor = Color.parseColor("#66cdaa")
+                when(deviceName){
+                    DEVICE_NAME_LEFT -> {
+                        isLeftDeviceConnected = true
+                    }
+                    DEVICE_NAME_RIGHT -> {
+                        isRightDeviceConnected = true
+                    }
+                }
+            }
+        }
+        // 対象のデバイスが左右のどちらかを指定
+        when(deviceName){
+            DEVICE_NAME_LEFT -> {
+                binding.deviceConnectionStatusLeft.text = text
+                binding.deviceConnectionStatusLeft.setTextColor(textColor)
+            }
+            DEVICE_NAME_RIGHT -> {
+                binding.deviceConnectionStatusRight.text = text
+                binding.deviceConnectionStatusRight.setTextColor(textColor)
+            }
+        }
+    }
+
+    /**
      * デバイスのスキャンを行う．
      */
     private fun startBleConnection(
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
-        //変更箇所=========================================
-        val playMusicActivity = PlayMusicActivity()
-        val leScanCallback = LeScanCallback(playMusicActivity, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
-        //==================================================
-        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
@@ -415,10 +514,11 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
     /**
      * Activityが終わるたびに，Bluetoothの接続を切っておく必要がある．
      */
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
         bleConnectionRunnableLeft?.disconnect()
         bleConnectionRunnableRight?.disconnect()
+        playMusicGamemode.stopMusic()
     }
 
     /**
@@ -429,46 +529,6 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
             "ボヨン" to R.raw.test_boyon,
             "和太鼓" to R.raw.test_japanese_drum
         )
-    }
-
-    /**
-     * メニューバーを実現するためのメソッド
-     */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_options_play_music, menu)
-        return true
-    }
-
-
-    /**
-     * メニューバーを押した時に呼ばれるメソッド
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var returnVal = true
-
-        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
-
-        when(item.itemId) {
-            android.R.id.home -> {
-                finish()
-            }
-
-            R.id.boyon -> {
-                nowSetFootsteps = "ボヨン"
-                footstepsText.text = nowSetFootsteps
-            }
-
-            R.id.japanese_drum ->{
-                nowSetFootsteps = "和太鼓"
-                footstepsText.text = nowSetFootsteps
-            }
-
-            else -> {
-                returnVal = super.onOptionsItemSelected(item)
-            }
-        }
-
-        return returnVal
     }
 
     fun displayScore(){
@@ -486,5 +546,57 @@ class PlayMusicGamemodeActivity : AppCompatActivity() {
         Log.d("debug", "pointArray[1]: ${pointArray[0]}")
         Log.d("debug", "pointArray[2]: ${pointArray[1]}")
         Log.d("debug", "pointArray[3]: ${pointArray[2]}")
+    }
+
+
+    /**
+     * Coroutinesという，軽量な非同期処理を行う機構．100ms毎にループして動作するように設定．
+     * 曲の曲の進捗に関する処理を行う．
+     */
+    private fun watchPlayerStatusCoroutine(){
+        GlobalScope.launch {
+            while(true){
+                // 今回はこの中でUIの更新を行いたい．しかしCoroutinesのデフォルトはUIスレッドでないらしいので，UIスレッドでの処理とする．
+                withContext(Dispatchers.Main){
+
+                    // 曲の現在の進捗を取得(ミリ秒)
+                    val musicProgress = playMusicGamemode.getProgress()
+                    // 曲の長さを取得(ミリ秒)
+                    val musicDuration = playMusicGamemode.getDuration()
+
+                    if(musicProgress != -1){
+                        val minute = musicProgress / 1000 / 60
+                        val second = musicProgress / 1000 % 60
+                        binding.musicTimeProgressMinuteTextView.text = minute.toString()
+                        binding.musicTimeProgressSecondTextView.text = "%02d".format(second)
+                    }
+
+                    // 曲の残りの長さを見てUIを更新する．
+                    if(musicProgress != -1 && musicDuration != -1){
+                        val remainingTimeMilliSeconds = musicDuration - musicProgress
+                        if(remainingTimeMilliSeconds >= 0){
+                            val remainingMinute = remainingTimeMilliSeconds / 1000 / 60
+                            val remainingSecond = remainingTimeMilliSeconds / 1000 % 60
+                            binding.musicTimeRemainMinuteTextView.text = remainingMinute.toString()
+                            binding.musicTimeRemainSecondTextView.text = "%02d".format(remainingSecond)
+                        }
+                    }
+
+
+                    // 再生中は曲の長さに応じてシークバーを操作する．
+                    if(playMusicGamemode.isPlaying()) {
+                        binding.musicSeekBar.progress =
+                            (1000 * (musicProgress.toDouble() / musicDuration.toDouble())).toInt()
+                    }
+
+                    // 両方のデバイスの接続が出来ていて，かつ曲がまだ再生されていない状況で，自動で曲の再生を始める．
+                    if(isLeftDeviceConnected && isRightDeviceConnected && isMusicNotPlayed){
+                        tappedStartButton()
+                        isMusicNotPlayed = false
+                    }
+                    delay(100)
+                }
+            }
+        }
     }
 }
