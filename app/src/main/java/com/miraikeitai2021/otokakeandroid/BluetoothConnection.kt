@@ -47,6 +47,11 @@ const val CONNECTION_PERIOD = 5000L
 /* BLEデバイスの値を処理するスレッドから，UIスレッドに値を渡すときのHandlerで使用する定数 */
 const val SENSOR_VALUE_RECEIVE = 100
 const val FOOT_ON_THE_GROUND = 101
+/* 通信状態の変化を通知するHandlerで使用する定数 */
+const val DEVICE_SCANNING = 102
+const val DEVICE_DISCONNECTED = 103
+const val DEVICE_CONNECTING = 104
+const val DEVICE_CONNECTED = 105
 
 /* BLEデバイスの値をUIスレッドで更新する際，どの値を更新するのかを指定する為のID*/
 const val SENSOR_LEFT_1 = 10000
@@ -58,82 +63,155 @@ const val SENSOR_RIGHT_2 = 10003
 const val DEVICE_NAME_LEFT = "Otokake_Left"
 const val DEVICE_NAME_RIGHT = "Otokake_Right"
 
-// BLEデバイスとの通信を行うスレッドからメインスレッドへデータを渡す際に使用されるHandler
-open class SensorValueHandler(
-    private val updateSensorValueTextView: (positionId: Int, sensorValue: Int) -> Unit,
-    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit
+/**
+ * BLEデバイスとの通信を行うスレッドからメインスレッドへデータを渡す際に使用されるHandler．
+ * 通信状態の変化に関する通知にも使われる．
+  */
+open class BluetoothConnectionHandler(
+    private val handleFootTouchWithTheGround: (deviceName: String) -> Unit,
+    private val handleOnConnectionStatusChanged: (deviceName: String, status: Int)-> Unit
 ): Handler(Looper.getMainLooper()){
     override fun handleMessage(msg: Message) {
         when(msg.what){
-            // 圧力の計測値をメインスレッドに渡す際は，こちらが呼ばれる．
-            SENSOR_VALUE_RECEIVE -> {
-                Log.d("debug", "handler called")
-                updateSensorValueTextView(msg.arg1, msg.arg2)
-            }
             // 足が地面と接触した際には，こちらが呼ばれる．
             FOOT_ON_THE_GROUND -> {
                 Log.d("debug", "${msg.obj} on the ground")
                 handleFootTouchWithTheGround(msg.obj.toString())
             }
+            // デバイスが検索中のときに呼ばれる．objから対象のデバイス名を取り出してメソッドを呼ぶ．
+            DEVICE_SCANNING ->{
+                handleOnConnectionStatusChanged(msg.obj.toString(), DEVICE_SCANNING)
+            }
+            // デバイスが切断されたときに呼ばれる．objから対象のデバイス名を取り出してメソッドを呼ぶ．
+            DEVICE_DISCONNECTED ->{
+                handleOnConnectionStatusChanged(msg.obj.toString(), DEVICE_DISCONNECTED)
+            }
+            // デバイスが接続中のとき呼ばれる．objから対象のデバイス名を取り出してメソッドを呼ぶ．
+            DEVICE_CONNECTING -> {
+                handleOnConnectionStatusChanged(msg.obj.toString(), DEVICE_CONNECTING)
+            }
+            // デバイスが接続されたときに呼ばれる．objから対象のデバイス名を取り出してメソッドを呼ぶ．
+            DEVICE_CONNECTED -> {
+                handleOnConnectionStatusChanged(msg.obj.toString(), DEVICE_CONNECTED)
+            }
         }
     }
 }
 
+/**
+ * Bluetoothの接続が開始した際に始めに実行される処理．非同期的な処理を行うため，他スレッドとして実行される．
+ */
 class BleConnectionRunnable(
-     private val bluetoothAdapter: BluetoothAdapter,
-     deviceName: String,
-     private val leScanCallback: LeScanCallback
+    private val context: Context,
+    private val bluetoothAdapter: BluetoothAdapter,
+    private val deviceName: String,
+    private val bluetoothConnectionHandler: BluetoothConnectionHandler
 ): Runnable{
-    /* デバイスがスキャン中かどうかを管理するBoolean変数 */
-    private var bleDeviceScanning: Boolean = false
+    var bleDeviceScanning: Boolean = false  /* デバイスがスキャン中かどうかを管理するBoolean変数 */
     private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+    private val leScanCallback = LeScanCallback(context, bluetoothLeScanner, bluetoothConnectionHandler, this)
     private val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES).build()
     private val scanFilters = listOf<ScanFilter>(ScanFilter.Builder().setDeviceName(deviceName).build())
+
+    /**
+     * このクラスがThreadに渡されてstartされたときに呼ばれる処理．ココから呼び出される処理はすべて他スレッドでの実行になる．
+     * デバイスのスキャンを一致定時間行い，接続に成功すれば次は接続を試みる．
+     */
     override fun run(){
         when(bluetoothAdapter.isEnabled){
             true ->{
                 // 事前に決めたスキャン時間を過ぎたらスキャンを停止する
                 Handler(Looper.getMainLooper()).postDelayed({
-                    bleDeviceScanning = false
-                    bluetoothLeScanner.stopScan(leScanCallback)
+                    // タイムアウト時間になってもまだスキャンをしていれば，スキャンを停止する．
+                    if(bleDeviceScanning){
+                        // メインスレッドに，接続を切断した旨を伝える
+                        val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                            DEVICE_DISCONNECTED,
+                            deviceName
+                        )
+                        connectionMessage.sendToTarget()
+                        Toast.makeText(context, R.string.device_not_found_message, Toast.LENGTH_LONG)
+                            .show()
+                        bleDeviceScanning = false
+                        bluetoothLeScanner.stopScan(leScanCallback)
+                    }
                 }, SCAN_PERIOD)
+                // メインスレッドに，デバイスを検索中である旨を伝える
+                val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                    DEVICE_SCANNING,
+                    deviceName
+                )
+                connectionMessage.sendToTarget()
                 bleDeviceScanning = true
                 bluetoothLeScanner.startScan(scanFilters, scanSettings, leScanCallback)
             }
             else -> {
+                // メインスレッドに，接続を中断した旨を伝える
+                val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                    DEVICE_DISCONNECTED,
+                    deviceName
+                )
+                connectionMessage.sendToTarget()
                 bleDeviceScanning = false
                 bluetoothLeScanner.stopScan(leScanCallback)
             }
         }
     }
 
+    /**
+     * デバイスの切断を人為的に行う際に呼ぶ．
+     * この処理は他スレッドでは行われないので注意．
+     */
     fun disconnect(){
         leScanCallback.disconnectGatt()
     }
 }
 
-open class LeScanCallback(private val context: PlayMusicActivity, private val bluetoothLeScanner: BluetoothLeScanner, private val sensorValueHandler: SensorValueHandler) : ScanCallback(){
+/**
+ * 探していたBLEデバイスが見つかった，もしくはスキャンに失敗した時に呼ばれる処理．
+ */
+open class LeScanCallback(
+    private val context: Context,
+    private val bluetoothLeScanner: BluetoothLeScanner,
+    private val bluetoothConnectionHandler: BluetoothConnectionHandler,
+    private val bleConnectionRunnable: BleConnectionRunnable) : ScanCallback(){
 
     private var isAlreadyFound = false
     private var bluetoothGatt: BluetoothGatt? = null
 
+    /**
+     * スキャンに失敗した際に呼ばれる処理．
+     */
     override fun onScanFailed(errorCode: Int) {
         super.onScanFailed(errorCode)
         Log.e("BLEDeviceScanFailed", "端末のスキャンに失敗しました")
     }
 
+    /**
+     * スキャンに成功した際に呼ばれる処理．
+     * @param callbackType どのようにしてこのコールバックが呼ばれたのかを示す値．
+     * @param result BLEデバイススキャンの結果．ここから見つかったデバイス名などのの情報がわかる．
+     */
     override fun onScanResult(callbackType: Int, result: ScanResult?) {
         result?.let {
             Log.d("debug", "device ${it.device.name} found")
+            // デバイスが見つかったので，デバイスの検索を止める．
+            bleConnectionRunnable.bleDeviceScanning = false
             bluetoothLeScanner.stopScan(this)
             // 各接続試行につき1回しか呼ばれないようにする．
             if(!isAlreadyFound) {
                 // デバイスが見つかってからデバイススキャンを停止するまでタイムラグがあるため，その時間を待ってから接続を開始する
                 Handler(Looper.getMainLooper()).postDelayed({
+                    // メインスレッドに，接続中である旨を伝える
+                    val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                        DEVICE_CONNECTING,
+                        it.device.name
+                    )
+                    connectionMessage.sendToTarget()
                     bluetoothGatt = it.device.connectGatt(
                         context,
                         true,
-                        GattCallback(context, sensorValueHandler)
+                        GattCallback(context, bluetoothConnectionHandler)
                     )
                 }, CONNECTION_INTERVAL)
                 isAlreadyFound = true
@@ -148,15 +226,20 @@ open class LeScanCallback(private val context: PlayMusicActivity, private val bl
         }
         Log.d("debug", "disconnect from BLE device")
         bluetoothGatt?.close()
+        // デバイス名をここでは判別できない．また手動でデバイスの切断を行わないため，ここではメインスレッドにメッセージは送らない．
     }
 }
 
-// デバイスの接続と切断を管理するコールバック関数
-class GattCallback(private val context: PlayMusicActivity, private val sensorValueHandler: SensorValueHandler) : BluetoothGattCallback() {
+/**
+ * デバイスの接続と切断を管理するコールバック関数が集まったクラス．
+ */
+class GattCallback(private val context: Context, private val bluetoothConnectionHandler: BluetoothConnectionHandler) : BluetoothGattCallback() {
     private var connectionState = STATE_DISCONNECTED
     private var connectionTimedOut = false
 
-    // BLEデバイスとの接続状況が変化すると呼ばれるメソッド．
+    /**
+     * BLEデバイスとの接続状況が変化すると呼ばれるメソッド．
+      */
     override fun onConnectionStateChange(
         gatt: BluetoothGatt?,
         status: Int,
@@ -170,6 +253,13 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         when (newState) {
             // 接続が確立したときに呼ばれる部分
             BluetoothProfile.STATE_CONNECTED -> {
+                // メインスレッドに接続済みであることを伝える．
+                val deviceName = gatt?.device?.name
+                val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                    DEVICE_CONNECTED,
+                    deviceName
+                )
+                connectionMessage.sendToTarget()
                 connectionState = STATE_CONNECTED
                 Log.d("debug", "Connected to GATT server.")
                 val isDiscoveringServices = gatt?.discoverServices()
@@ -178,6 +268,12 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
 
             // デバイスとの接続が切れた際に呼ばれる部分．
             BluetoothProfile.STATE_DISCONNECTED -> {
+                // メインスレッドに切断されたことを伝える．
+                val connectionMessage = bluetoothConnectionHandler.obtainMessage(
+                    DEVICE_DISCONNECTED,
+                    gatt?.device?.name
+                )
+                connectionMessage.sendToTarget()
                 connectionState = STATE_DISCONNECTED
                 Log.d("debug", "Disconnected from GATT server.")
                 gatt?.close()
@@ -200,7 +296,9 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
-    // 接続後，BLEで使用される「サービス」が受け取ると呼ばれる．今回使うサービスは3つ目のサービスであるため，それを抽出する．
+    /**
+     * 接続後，BLEで使用される「サービス」が受け取ると呼ばれる．今回使うサービスは3つ目のサービスであるため，それを抽出する．
+     */
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int){
         when(status){
             BluetoothGatt.GATT_SUCCESS -> {
@@ -215,7 +313,9 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
         }
     }
 
-    // キャラクタリスティックを一番最初に受信するとココが呼ばれる．
+    /**
+     * キャラクタリスティックを一番最初に受信するとココが呼ばれる．
+     */
     override fun onCharacteristicRead(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic,
@@ -239,14 +339,15 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
     }
 
     // 1つ前に受け取ったセンサの計測値と，今うけとったセンサの計測値を格納するための配列
-    private val gap1 = arrayOf(0,0)
+    private val gap = arrayOf(0, 0)
 
-    // デバイスから定期的にキャラクタリスティックとよばれる通信データが送られてくると呼ばれる関数．
+    /**
+     * デバイスから定期的にキャラクタリスティックとよばれる通信データが送られてくると呼ばれる関数．
+     */
     override fun onCharacteristicChanged(
         gatt: BluetoothGatt?,
         characteristic: BluetoothGattCharacteristic?
     ) {
-//        Log.d("debug", "onCharacteristicChanged called")
         if(characteristic?.value?.size == 4){
             val deviceName = gatt?.device?.name
             if(deviceName != DEVICE_NAME_LEFT && deviceName != DEVICE_NAME_RIGHT) return
@@ -254,19 +355,19 @@ class GattCallback(private val context: PlayMusicActivity, private val sensorVal
                 val sensorValue1 = (characteristic.value[0].toInt() and 0xFF) * 256 + (characteristic.value[1].toInt() and 0xFF)
                 val sensorValue2 = (characteristic.value[2].toInt() and 0xFF) * 256 + (characteristic.value[3].toInt() and 0xFF)
 
-                // 配列の要素をずらす．
-                gap1[0] = gap1[1]
-                gap1[1] = sensorValue1
+                gap[0] = gap[1]
+                gap[1] = sensorValue1
 
-                // 圧力値(低いほど高い)が3072以上，かつ，圧力の減少幅が-500以上であった場合は，足音を鳴らす信号をメインスレッドに送信する．
-                if(gap1[0] in 1500..4095 && (gap1[1] - gap1[0]) <= -500 && gap1[1] in 0..1000){
-                    Log.d("debug", "gap[0]: ${gap1[0]}, gap[1]: ${gap1[1]}")
-                    val footOnTheGroundMsg = sensorValueHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
+                // 「前回の計測出足が地面についていな状態(0..500の範囲外)」かつ，今回の計測で足が地面についている状態(0..500の範囲内)であったら，足が着いた瞬間として検知
+                if(gap[0] in 2000..4096 && (gap[0] - gap[1]) > 1000){
+                    Log.d("debug", "seonsorValue1: $sensorValue1")
+                    val footOnTheGroundMsg = bluetoothConnectionHandler.obtainMessage(FOOT_ON_THE_GROUND, 0, 0, if(deviceName == DEVICE_NAME_LEFT) DEVICE_NAME_LEFT else DEVICE_NAME_RIGHT)
                     footOnTheGroundMsg.sendToTarget()
                 }
-                    val sensorValue1Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
+
+                    val sensorValue1Msg = bluetoothConnectionHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_1 else SENSOR_RIGHT_1, sensorValue1)
                     sensorValue1Msg.sendToTarget()
-                    val sensorValue2Msg = sensorValueHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
+                    val sensorValue2Msg = bluetoothConnectionHandler.obtainMessage(SENSOR_VALUE_RECEIVE, if(deviceName == DEVICE_NAME_LEFT) SENSOR_LEFT_2 else SENSOR_RIGHT_2, sensorValue2)
                     sensorValue2Msg.sendToTarget()
             }
         }else{

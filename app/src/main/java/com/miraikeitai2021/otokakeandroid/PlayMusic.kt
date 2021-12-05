@@ -2,7 +2,6 @@ package com.miraikeitai2021.otokakeandroid
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.media.MediaPlayer.OnPreparedListener
 import android.media.PlaybackParams
 import android.net.Uri
 import android.os.Handler
@@ -15,7 +14,6 @@ class PlayMusic(context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private val checkRunBpm: CheckRunBpm = CheckRunBpm()
     private var changedMusicSpeed = 0f
-    private val playMusicContinue = PlayMusicContinue()
     private lateinit var playBackParams: PlaybackParams //変更箇所 最初に宣言して, 32行目で値を入れる．その後33行目，83行目で同じものを使用する．
 
     /**
@@ -23,7 +21,7 @@ class PlayMusic(context: Context) {
      * musicUri：ストレージから再生する音楽を指定するURI
      * musicSpeed：加工前の曲のbpm
      */
-    fun startMusic(musicUri: Uri){ //fun startMusic(musicUri: Uri, musicSpeed: Float)
+    fun startMusic(musicUri: Uri, playMusicContinue: PlayMusicContinue){ //fun startMusic(musicUri: Uri, musicSpeed: Float)
         if(mediaPlayer == null){
 
             //曲の再生開始
@@ -42,6 +40,7 @@ class PlayMusic(context: Context) {
                     mediaPlayer!!.playbackParams = speed
                 }, 10)
                 mediaPlayer!!.prepare()
+                mediaPlayer?.setVolume(0.3f, 0.3f)
                 mediaPlayer!!.start()
                 mediaPlayer!!.setOnCompletionListener{ playMusicContinue.callBackPlayMusic(myContext, this) }
             } catch (e: IllegalArgumentException) {
@@ -52,6 +51,16 @@ class PlayMusic(context: Context) {
             } catch (e: IOException) {
                 //Toast.makeText(myContext, "Exception($e)", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    /**
+     * 音楽の再生を途中から再開するメソッド
+     */
+    fun resumeMusic(){
+        mediaPlayer?.let { mediaPlayer ->
+            // ポーズ状態からの再生時の動作
+            mediaPlayer?.start()
         }
     }
 
@@ -69,6 +78,54 @@ class PlayMusic(context: Context) {
             mediaPlayer!!.release()
             mediaPlayer = null
         }
+    }
+
+    /**
+     * 曲を一時停止するメソッド
+     */
+    fun pauseMusic(){
+        mediaPlayer?.let{
+            // 歩調のBPM情報をリセット
+//            checkRunBpm.resetRunBpm()
+            it.pause()
+        }
+    }
+
+    /**
+     * 曲の一時停止か・再生中かの状態を取得する．
+     */
+    fun getIsPlaying(): Boolean{
+        mediaPlayer?.let{
+            return it.isPlaying
+        }
+        return false
+    }
+
+    /**
+     * 曲の全体の長さを取得する．
+     */
+    fun getDuration(): Int{
+        mediaPlayer?.let{
+            return it.duration
+        }
+        return -1
+    }
+
+    /**
+     * 曲の現在の再生位置を取得する．
+     */
+    fun getProgress(): Int{
+        mediaPlayer?.let{
+            return it.currentPosition
+        }
+        return -1
+    }
+
+    /**
+     * 曲の再生位置を移動する．
+     */
+    fun seekTo(milliSecond: Int){
+        mediaPlayer?.seekTo(milliSecond)
     }
 
     /**

@@ -7,39 +7,37 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioAttributes
+import android.media.MediaMetadataRetriever
 import android.media.SoundPool
-import android.net.Uri
-import android.os.Build
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.miraikeitai2021.otokakeandroid.databinding.ActivityPlayMusicBinding
+import kotlinx.coroutines.*
+import java.lang.Exception
 
+// ストレージの読込Permissionをリクエストするときのリクエストコード
 private const val REQUEST_READ_EXTERNAL_STORAGE = 1001
+
+
 
 class PlayMusicActivity : AppCompatActivity() {
     val checkMusicUri: CheckMusicUri = CheckMusicUri() //曲のUriを取得するクラス
     private val checkRunBpm: CheckRunBpm = CheckRunBpm() //歩調のbpmを取得するクラス
     private val checkMusicBpm: CheckMusicBpm = CheckMusicBpm() //曲のbpmを取得するクラス
     private val playMusic: PlayMusic = PlayMusic(this) //曲を再生するクラス
-    //private val musicId: Int = 12248 //保存したときに確認したIDの値を入れておく．
     private var previousDeviceName = "" // 前回地面に足が接したときのデバイス名．重複防止に使う．
     private val playMusicContinue: PlayMusicContinue = PlayMusicContinue() //曲を連続再生するクラス
-    private val PERMISSION_WRITE_EX_STR = 1 //外部ストレージへのパーミッション許可に使用する．
-
 
     private var nowSetFootsteps = "和太鼓" //現在設定している足音
     private var footSoundMap:MutableMap<String, Any> = mutableMapOf<String, Any>() //足音とそのIDの組のMap
@@ -50,6 +48,15 @@ class PlayMusicActivity : AppCompatActivity() {
     private var bleConnectionRunnableLeft: BleConnectionRunnable? = null
     // 右足デバイスと通信してデータを受け取るスレッド
     private var bleConnectionRunnableRight: BleConnectionRunnable? = null
+
+    // 曲が再生中か一時停止中かを示すフィールド
+    private var isPlayingMusic = false
+    // 曲の再生がActivityを起動してから最初に行われるどうか判定する
+    private var isFirstTimeToPlay = true
+
+    // 曲目データベースのインスタンス
+    private val musicDatabase = MusicDatabase.getInstance(this)
+    private val musicDao = musicDatabase.MusicDao()
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,10 +117,16 @@ class PlayMusicActivity : AppCompatActivity() {
 
         //************************************************************************************
 
-        binding.startButton.setOnClickListener { tappedStartButton(storageIdList) }
-        binding.stopButton.setOnClickListener { tappedStopButton() }
-        binding.bluetoothButton.setOnClickListener{ tappedBluetoothButton()}
+        binding.musicPlayAndPauseImageButton.setOnClickListener { tappedPlayAndPauseButton(storageIdList) }
+        binding.musicRewindImageButton.setOnClickListener { tappedRewindButton() }
+        binding.musicSkipImageButton.setOnClickListener { tappedSkipButton() }
+        binding.backButton.setOnClickListener { tappedBackButton() }
+        binding.changeFootstepButton.setOnClickListener { view -> tappedChangeFootStepButton(view) }
+        // テスト用．本番環境では無効にする必要がある．
+        binding.bluetoothButton.setOnClickListener { tappedBluetoothButton() }
 
+        // アクションバーの非表示
+        supportActionBar?.hide()
 
         // この記法が文法的にわからない。抽象メソッドの実装をしている？復習が必要
         fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
@@ -143,51 +156,106 @@ class PlayMusicActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_READ_EXTERNAL_STORAGE)
         }
 
-        val searchLeftDeviceButton = findViewById<Button>(R.id.search_device_button_left)
-        searchLeftDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectLeftDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_LEFT)
+                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_LEFT)
                 }
             }
         }
 
-        val searchRightDeviceButton = findViewById<Button>(R.id.search_device_button_right)
-        searchRightDeviceButton.setOnClickListener {
+        // 左側の足裏デバイスの接続ボタンのリスナ登録
+        binding.connectRightDeviceImageButton.setOnClickListener{
             bluetoothAdapter?.let{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                    bleConnectionRunnableRight = startBleConnection(it, DEVICE_NAME_RIGHT)
+                    bleConnectionRunnableLeft = startBleConnection(it, DEVICE_NAME_RIGHT)
                 }
             }
         }
 
-        val disconnectLeftDeviceButton = findViewById<Button>(R.id.disconnect_device_button_left)
-        disconnectLeftDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
+        // シークバーの初期化．1000段階で表示．
+        binding.musicSeekBar.max = 1000
+        binding.musicSeekBar.progress = 0
 
-        val disconnectRightDeviceButton = findViewById<Button>(R.id.disconnect_device_button_right)
-        disconnectRightDeviceButton.setOnClickListener {
-            bleConnectionRunnableLeft?.disconnect()
-        }
+        // シークバーが操作されたときのリスナを登録
+        binding.musicSeekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener{
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if(fromUser){
+                    onSeekBarProgressChanged(progress)
+                }
+            }
+            override fun onStartTrackingTouch(p0: SeekBar?) {}
+            override fun onStopTrackingTouch(p0: SeekBar?) {}
+        })
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // 100msに1回曲の再生状態を確認してUIを更新するCoroutines
+        watchPlayerStatusCoroutine(storageIdList)
     }
 
     /**
-     * スタートボタンがクリックされたときの処理
+     * スタートボタンと一時停止を兼用したボタンがタップされたときの処理
      */
-    private fun tappedStartButton(storageIdList: Array<Long>){
+    private fun tappedPlayAndPauseButton(storageIdList: Array<Long>){
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ音楽を再生
-        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
-            playMusicContinue.orderMusic(storageIdList, this, playMusic)
+        if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            // 曲が停止中かつ，Activityを起動後に初めて再生する場合
+            if (isFirstTimeToPlay && !playMusic.isPlaying()) {
+                playMusicContinue.orderMusic(storageIdList, this, playMusic)
+                isFirstTimeToPlay = false
+            } else if (playMusic.isPlaying()) {// 曲が再生中の場合
+                // 再生を一時停止する
+                playMusic.pauseMusic()
+            }else{// 曲が再生中でない場合
+                // 曲の再生を再開する
+                playMusic.resumeMusic()
+            }
         }
-//        //曲をスタートする
-//        val text: TextView = findViewById(R.id.textView)
-//        val contentUri = checkMusicUri.checkUri(musicId, contentResolver)
-//        text.setText(contentUri.toString())
-//        playMusic.startMusic(contentUri)
-        //Toast.makeText(applicationContext, "Start", Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * 巻き戻しボタンがタップされたときの処理
+     */
+    private fun tappedRewindButton(){
+        // スキップ処理を行う前の再生状態を保存しておく
+        val isPlayingBefore = playMusic.isPlaying()
+        // 曲を一度も再生したことがない状態で作動しないようにする
+        if(playMusic.getMediaPlayer() != null){
+            // 始めから2秒以内のところで巻き戻しボタンを押した場合，前の曲を再生．
+            if(playMusic.getProgress() <= 2000){
+                playMusicContinue.playPreviousTrack(this, playMusic)
+            }else{// それ以外は，再生位置を0に戻す
+                playMusic.seekTo(0)
+            }
+        }
+        // 処理前に一時停止中であったのなら，再び一時停止する
+        if(!isPlayingBefore){
+            Handler(Looper.getMainLooper()).postDelayed({
+                playMusic.pauseMusic()
+            }, 10)
+        }
+    }
+
+    /**
+     * 早送りボタンがタップされたときの処理
+     */
+    private fun tappedSkipButton(){
+        // スキップ処理を行う前の再生状態を保存しておく
+        val isPlayingBefore = playMusic.isPlaying()
+        // 曲を一度も再生したことがない状態で作動しないようにする
+        if(playMusic.getMediaPlayer() != null){
+            // 再生中にスキップボタンがタップされたのであれば，次の曲を再生する．
+            playMusicContinue.callBackPlayMusic(this, playMusic)
+        }
+
+        // 処理前に一時停止中であったのなら，再び一時停止する．
+        if(!isPlayingBefore){
+            Handler(Looper.getMainLooper()).postDelayed({
+                playMusic.pauseMusic()
+            }, 10)
+        }
     }
 
     /**
@@ -202,6 +270,35 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
+     * シークバーが操作されたときの処理
+     */
+    private fun onSeekBarProgressChanged(progress: Int){
+        // SeekBar上のprogressは千分率なので，割合に戻す．
+        val progressRate = progress.toDouble() / 1000
+        val nextProgress = (playMusic.getDuration() * progressRate).toInt()
+        if(playMusic.getDuration() != -1){
+            playMusic.seekTo(nextProgress)
+        }
+    }
+
+    /**
+     * 曲のメタデータから画像を持ってくる処理
+     */
+    private fun getAlbumPictureFromMetadata(storageId: Long): ByteArray?{
+        val mmr = MediaMetadataRetriever()
+        mmr.setDataSource(this, checkMusicUri.checkUri(storageId.toInt(), this.contentResolver))
+        var albumPictureByteArray: ByteArray? = null
+        if(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) != null) {
+            try {
+                albumPictureByteArray = mmr.embeddedPicture
+            }catch(e: Exception){
+                Log.e("debug", "failed to get album picture: $e")
+            }
+        }
+        return albumPictureByteArray
+    }
+
+    /**
      * Bluetoothボタンがクリックされたときの処理
      * 今はボタンで割り込んでいるが，Bluetoothの通信による割込みに変えたい
      */
@@ -209,17 +306,16 @@ class PlayMusicActivity : AppCompatActivity() {
     private fun tappedBluetoothButton(){
         // APIバージョンが29以上(許可が必要ない)か，ストレージへのアクセス許可が取れている場合のみ動作する
         if(Build.VERSION.SDK_INT >= 29 || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED){
-          if(playMusic.getMediaPlayer() != null){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける
+          if(playMusic.getMediaPlayer() != null && playMusic.isPlaying()){ //変更箇所 音楽再生前に，bluetoothボタンを押すときの誤動作を避ける．また，一時停止中に曲の速度を変更して曲の再生が再び始まってしまうのを避ける．
               //ストレージIDを取得
               val musicId = playMusicContinue.getStorageId()
 
               //歩調のBpmによって曲の再生速度を変更する
-              playMusic.changeSpeedMusic(checkRunBpm.checkRunBpm(this, musicId.toInt()),checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
+              val runBpm = checkRunBpm.checkRunBpm(this, musicId.toInt())
+              playMusic.changeSpeedMusic(runBpm,checkMusicBpm.checkMusicBpm(this, musicId.toInt()))
 
-              val text: TextView = findViewById(R.id.textView)
-              text.setText("musicBpm: ${checkMusicBpm.getMusicBpms()}  " +
-                      "runBpm: ${checkRunBpm.getRunBpm()}  " +
-                      "musicSpeed: ${playMusic.getChangedMusicSpeed()}  ")
+              // BPMのTextViewをRunBPMで更新
+              binding.runBpmValueTextView.text = "%.1f".format(runBpm)
           }
         }
     }
@@ -277,31 +373,6 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-     * SensorValueHandlerから圧力の値を受け取った時，圧力の計測値を示すTextViewを更新するラムダ式．
-     * ラムダ式である理由は，SensorValueHandlerのメンバとして渡すため．
-     */
-    private val updateSensorValueTextView: (Int, Int) -> Unit = { positionId, sensorValue ->
-        when(positionId){
-            SENSOR_LEFT_1 ->{
-                val sensorValueLeft1TextView = findViewById<TextView>(R.id.sensor_value_left_1_text_view)
-                sensorValueLeft1TextView.text = sensorValue.toString()
-            }
-            SENSOR_LEFT_2 ->{
-                val sensorValueLeft2TextView = findViewById<TextView>(R.id.sensor_value_left_2_text_view)
-                sensorValueLeft2TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_1 ->{
-                val sensorValueRight1TextView = findViewById<TextView>(R.id.sensor_value_right_1_text_view)
-                sensorValueRight1TextView.text = sensorValue.toString()
-            }
-            SENSOR_RIGHT_2 ->{
-                val sensorValueRight2TextView = findViewById<TextView>(R.id.sensor_value_right_2_text_view)
-                sensorValueRight2TextView.text = sensorValue.toString()
-            }
-        }
-    }
-
-    /**
      * SensorValueHandlerが足と地面の接触を検知したときに呼び出されるメソッド，
      * こちらも，SensorValueHandlerに渡すためにラムダ式にする．
      */
@@ -322,9 +393,7 @@ class PlayMusicActivity : AppCompatActivity() {
             // 足音を再生する際にはSoundPoolというクラスを用いる．Builderを用いてオブジェクトを取得．
             val footSoundPool =
                 SoundPool.Builder().setAudioAttributes(audioAttributes).setMaxStreams(1).build()
-            // 再生する足音をres/rawフォルダからもってきて，そのIDを取得．
-//            val soundId = footSoundPool.load(this, R.raw.maoo_damashii_bass_drum, 1)
-//            // playSoundメソッドは，上記3つのオブジェクトを
+            // playSoundメソッドは，上記3つのオブジェクトを
             val sound = footSoundMap[nowSetFootsteps] as Int
             val soundId = footSoundPool.load(this, sound, 1)
             playFootSound(footSoundPool, soundId)
@@ -357,6 +426,45 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
+     * デバイスの接続状態が変化したときに呼ばれるメソッド
+     * */
+    private val handleOnConnectionStatusChanged = fun(deviceName: String, status: Int){
+        // 表示するテキストとその色が入る変数
+        var text = ""
+        var textColor = 0
+        // 接続状態が「切断」か，「接続中」か，「接続済み」かを見分け，入れるテキストと色を指定
+        when(status){
+            DEVICE_SCANNING -> {
+                text = getString(R.string.scanning)
+                textColor = Color.BLACK
+            }
+            DEVICE_DISCONNECTED -> {
+                text = getString(R.string.disconnected)
+                textColor = Color.BLACK
+            }
+            DEVICE_CONNECTING -> {
+                text = getString(R.string.connecting)
+                textColor = Color.BLACK
+            }
+            DEVICE_CONNECTED -> {
+                text = getString(R.string.connected)
+                textColor = Color.parseColor("#66cdaa")
+            }
+        }
+        // 対象のデバイスが左右のどちらかを指定
+        when(deviceName){
+            DEVICE_NAME_LEFT -> {
+                binding.deviceConnectionStatusLeft.text = text
+                binding.deviceConnectionStatusLeft.setTextColor(textColor)
+            }
+            DEVICE_NAME_RIGHT -> {
+                binding.deviceConnectionStatusRight.text = text
+                binding.deviceConnectionStatusRight.setTextColor(textColor)
+            }
+        }
+    }
+
+    /**
      * 足と地面が接したときに足音の再生を行う．
      */
     private fun playFootSound(footSoundPool: SoundPool, soundId: Int){
@@ -377,21 +485,21 @@ class PlayMusicActivity : AppCompatActivity() {
         bluetoothAdapter: BluetoothAdapter,
         deviceName: String
     ): BleConnectionRunnable {
-        val sensorValueHandler = SensorValueHandler(updateSensorValueTextView, handleFootTouchWithTheGround)
-        val leScanCallback = LeScanCallback(this, bluetoothAdapter.bluetoothLeScanner, sensorValueHandler)
-        val bleConnectionRunnable = BleConnectionRunnable(bluetoothAdapter, deviceName, leScanCallback)
+        val bluetoothConnectionHandler = BluetoothConnectionHandler(handleFootTouchWithTheGround, handleOnConnectionStatusChanged)
+        val bleConnectionRunnable = BleConnectionRunnable(this, bluetoothAdapter, deviceName, bluetoothConnectionHandler)
         val bluetoothConnectionThread = Thread(bleConnectionRunnable)
         bluetoothConnectionThread.start()
         return bleConnectionRunnable
     }
 
     /**
-     * Activityが終わるたびに，Bluetoothの接続を切っておく必要がある．
+     * Activityが破棄されるときに呼び出されるメソッド．曲の再生を止めると同時に，Bluetoothの接続を切断する．
      */
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
         bleConnectionRunnableLeft?.disconnect()
         bleConnectionRunnableRight?.disconnect()
+        playMusic.stopMusic()
     }
 
     /**
@@ -405,42 +513,119 @@ class PlayMusicActivity : AppCompatActivity() {
     }
 
     /**
-     * メニューバーを実現するためのメソッド
+     * 前の画面に戻るボタンがタップされたときの処理
      */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_options_play_music, menu)
-        return true
+    private fun tappedBackButton(){
+        tappedStopButton()
+        finish()
     }
 
-
     /**
-     * メニューバーを押した時に呼ばれるメソッド
+     * 足音の変更ボタンがタップされたときの処理
      */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var returnVal = true
+    private fun tappedChangeFootStepButton(v: View){
+        val footStepChangePopup = PopupMenu(this, v)
+        val inflater: MenuInflater = footStepChangePopup.menuInflater
+        inflater.inflate(R.menu.menu_options_play_music, footStepChangePopup.menu)
+        footStepChangePopup.setOnMenuItemClickListener { item ->
+            when(item.itemId){
+                R.id.boyon -> {
+                    nowSetFootsteps = "ボヨン"
+                    true
+                }
 
-        val footstepsText = findViewById<TextView>(R.id.nowFootsteps)
-
-        when(item.itemId) {
-            android.R.id.home -> {
-                finish()
-            }
-
-            R.id.boyon -> {
-                nowSetFootsteps = "ボヨン"
-                footstepsText.text = nowSetFootsteps
-            }
-
-            R.id.japanese_drum ->{
-                nowSetFootsteps = "和太鼓"
-                footstepsText.text = nowSetFootsteps
-            }
-
-            else -> {
-                returnVal = super.onOptionsItemSelected(item)
+                R.id.japanese_drum ->{
+                    nowSetFootsteps = "和太鼓"
+                    true
+                }
+                else -> false
             }
         }
+        // この関数を呼び出すボタンの上に，ポップアップメニューとして足跡の一覧を表示する．
+        footStepChangePopup.show()
+    }
 
-        return returnVal
+    /**
+     * Coroutinesという，軽量な非同期処理を行う機構．100ms毎にループして動作するように設定．
+     * 曲の再生，停止，一時停止，曲の進捗等に関する処理を行う．
+     */
+    private fun watchPlayerStatusCoroutine(storageIdList: Array<Long>){
+        // 不必要な時にUIの更新を行わないように，前の状態と比較する為の変数．
+        var previousPlayState = playMusic.isPlaying()
+        // 不必要なクエリやUIの更新を行わないように，前の，再生していた曲の状態を見るための変数．
+        var previousMusicOrder = -1
+        GlobalScope.launch {
+            while(true){
+                // 今回はこの中でUIの更新を行いたい．しかしCoroutinesのデフォルトはUIスレッドでないらしいので，UIスレッドでの処理とする．
+                withContext(Dispatchers.Main){
+
+                    // 曲の現在の進捗を取得(ミリ秒)
+                    val musicProgress = playMusic.getProgress()
+                    // 曲の長さを取得(ミリ秒)
+                    val musicDuration = playMusic.getDuration()
+
+                    if(musicProgress != -1){
+                        val minute = musicProgress / 1000 / 60
+                        val second = musicProgress / 1000 % 60
+                        binding.musicTimeProgressMinuteTextView.text = minute.toString()
+                        binding.musicTimeProgressSecondTextView.text = "%02d".format(second)
+                    }
+
+                    // 曲の残りの長さを見てUIを更新する．
+                    if(musicProgress != -1 && musicDuration != -1){
+                        val remainingTimeMilliSeconds = musicDuration - musicProgress
+                        if(remainingTimeMilliSeconds >= 0){
+                            val remainingMinute = remainingTimeMilliSeconds / 1000 / 60
+                            val remainingSecond = remainingTimeMilliSeconds / 1000 % 60
+                            binding.musicTimeRemainMinuteTextView.text = remainingMinute.toString()
+                            binding.musicTimeRemainSecondTextView.text = "%02d".format(remainingSecond)
+                        }
+                    }
+
+                    // 曲が再生中かどうかを見て再生/一時停止ボタンのUIを変更する
+
+                    if(previousPlayState != playMusic.isPlaying()){
+                        binding.musicPlayAndPauseImageButton.background = if(playMusic.isPlaying()) getDrawable(R.drawable.button_play_pause) else getDrawable(R.drawable.button_play_play)
+                    }
+                    previousPlayState = playMusic.isPlaying()
+
+                    // 再生中は曲の長さに応じてシークバーを操作する．
+                    if(playMusic.isPlaying()) {
+                        binding.musicSeekBar.progress =
+                            (1000 * (musicProgress.toDouble() / musicDuration.toDouble())).toInt()
+                    }
+
+                    if(previousMusicOrder != playMusicContinue.getOrder()){
+                        // 現在再生中の曲の情報を取得
+                        // ここで例外（配列範囲外）が起こっている．原因を突き止め対処する
+                        Log.d("debug", "current order: ${playMusicContinue.getOrder()}")
+                        Log.d("debug", "storageIdList size: ${storageIdList.size}")
+                        if(playMusicContinue.getOrder() in 0..storageIdList.lastIndex){
+                            val firstMusicInfo = musicDao.getMusicFromStorageId(storageIdList[playMusicContinue.getOrder()])
+                            firstMusicInfo?.let {
+                                val firstMusicTitle = firstMusicInfo.title
+                                val firstMusicArtist = firstMusicInfo.artist
+                                // TextViewにセット
+                                binding.musicTitleTextView.text = firstMusicTitle
+                                binding.musicArtistTextView.text = firstMusicArtist
+                            }
+
+                            // 曲のアルバム画像を取得
+                            val albumPictureByteArray = getAlbumPictureFromMetadata(storageIdList[playMusicContinue.getOrder()])
+                            albumPictureByteArray?.let{ albumPictureByteArray ->
+                                val albumPictureBitmap = BitmapFactory.decodeByteArray(albumPictureByteArray, 0, albumPictureByteArray.size)
+                                albumPictureBitmap?.let { albumPictureBitmap ->
+                                    binding.musicAlbumImageView.setImageBitmap(albumPictureBitmap)
+                                }
+                            }
+                        }else{
+                            Log.e("debug", "array out of bound")
+                        }
+                    }
+                    previousMusicOrder = playMusicContinue.getOrder()
+                    delay(100)
+                }
+            }
+        }
     }
 }

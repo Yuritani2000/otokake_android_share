@@ -181,7 +181,7 @@ class GamePlaylistPlayActivity : AppCompatActivity() {
                     storageMusic.storageInMusic(
                         this@GamePlaylistPlayActivity,
                         inputStream,
-                        item.backend_id,
+                        item.backend_id
                     )
 
                     // 保存した曲のストレージIDを保存する．
